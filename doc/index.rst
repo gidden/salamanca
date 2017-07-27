@@ -1,0 +1,57 @@
+
+salamanca: Harmonization for Integrated Assessment Models 
+======================================================
+
+Release v\ |version|.
+
+.. image:: https://img.shields.io/pypi/v/salamanca-iamc.svg
+   :target: https://pypi.python.org/pypi/salamanca-iamc/
+   
+.. image:: https://img.shields.io/pypi/l/salamanca-iamc.svg
+    :target: https://pypi.python.org/pypi/salamanca-iamc
+
+.. image:: https://circleci.com/gh/gidden/salamanca.svg?style=shield&circle-token=:circle-token
+    :target: https://circleci.com/gh/gidden/salamanca
+
+.. image:: https://coveralls.io/repos/github/gidden/salamanca/badge.svg?branch=master
+    :target: https://coveralls.io/github/gidden/salamanca?branch=master
+
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.802832.svg
+   :target: https://doi.org/10.5281/zenodo.802832
+   
+**salamanca** is a Python package and Command Line Interface (CLI) for
+harmonization of IAM results with historical data sources. Currently, emissions
+trajectories are supported.
+
+Documentation
+-------------
+
+.. toctree::
+   :maxdepth: 1
+
+   tutorial.ipynb
+   install
+   theory
+   data
+   config
+   cli
+   api
+
+
+
+Get in touch
+------------
+
+- Report bugs, suggest features or view the source code `on GitHub`_.
+- For less well defined questions or ideas, use the `mailing list`_.
+
+.. _mailing list: https://groups.google.com/forum/#!forum/salamanca
+.. _on GitHub: http://github.com/gidden/salamanca
+
+License
+-------
+
+salamanca is available under the open source `Apache License`_.
+
+.. _Apache LIcense: http://www.apache.org/licenses/LICENSE-2.0.html
+

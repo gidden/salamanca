@@ -1,0 +1,7 @@
+salamanca
+argparse
+numpy
+pandas
+pyyaml
+xlrd
+xlsxwriter
