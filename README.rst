@@ -1,20 +1,11 @@
 `salamanca` - A Python library for working with socio-economic indicators
 =========================================================================
 
-.. image:: https://img.shields.io/pypi/v/salamanca-iamc.svg
-   :target: https://pypi.python.org/pypi/salamanca-iamc/
-   
-.. image:: https://img.shields.io/pypi/l/salamanca-iamc.svg
-    :target: https://pypi.python.org/pypi/salamanca-iamc
-
 .. image:: https://circleci.com/gh/gidden/salamanca.svg?style=shield&circle-token=:circle-token
     :target: https://circleci.com/gh/gidden/salamanca
 
 .. image:: https://coveralls.io/repos/github/gidden/salamanca/badge.svg?branch=master
     :target: https://coveralls.io/github/gidden/salamanca?branch=master
-
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.802832.svg
-   :target: https://doi.org/10.5281/zenodo.802832
    
 **Please note that salamanca is still in early developmental stages, thus all interfaces are subject to change.**
 
