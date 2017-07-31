@@ -12,6 +12,10 @@ CACHE_DIR = os.path.expanduser(
 
 WB_INDICATORS = {
     'SP.POP.TOTL': 'total_population',
+    'PA.NUS.PPP': 'ppp_to_mer',
+    'FP.CPI.TOTL': 'cpi',
+    'PA.NUS.FCRF': 'exchange_rate',
+    'NY.GDP.DEFL.ZS': 'gdp_deflator',
 }
 
 INDICATORS_WB = {d: k for k, d in WB_INDICATORS.items()}
