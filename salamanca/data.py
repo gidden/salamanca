@@ -187,3 +187,14 @@ class WorldBank(object):
             db.write(source, ind, df)
 
         return df
+
+
+def download_wb_data(log=False):
+    # turn this into a CLI
+    if log:
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+
+    wb = WorldBank()
+    for ind in INDICATORS_WB:
+        wb.query(ind)
