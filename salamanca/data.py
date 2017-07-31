@@ -18,12 +18,8 @@ WB_INDICATORS = {
 INDICATORS_WB = {d: k for k, d in WB_INDICATORS.items()}
 
 
-def query_world_bank(indicator, tries=5, iso3=True, cache=True):
-    i = indicator
-    wb = i if i in WB_INDICATORS else WB_INDICATORS[i]
-    sa = i if i != wb else INDICATORS_WB[i]
-
-    baseurl = '{}/{}?format=json'.format(WB_URL, wb)
+def query_wb(url, tries=5):
+    baseurl = url
     pages = 1
     page = 0
     result = []
@@ -35,9 +31,23 @@ def query_world_bank(indicator, tries=5, iso3=True, cache=True):
         query.close()
         pages = _result[0]['pages']
         result += _result[1]
+    return result
 
+
+def wb_indicator(i, tries=5, iso3=True, cache=True):
+    i = indicator
+    wb = i if i in WB_INDICATORS else WB_INDICATORS[i]
+    ind = i if i != wb else INDICATORS_WB[i]
+
+    # pop kwargs for all possible queries in indicator api
+    # if they match cached file, try to grab from cache
+    # otherwise pass directly
+    # if subset requested here, then just pass through
+
+    url = '{}/{}?format=json'.format(WB_URL, wb)
+    result = query_wb(url, tries=tries)
     df = pd.DataFrame(result)
-    df['indicator'] = sa
+    df['indicator'] = ind
     df['country'] = df['country'].apply(lambda x: x['id'])
     if iso3:
         # implement this
