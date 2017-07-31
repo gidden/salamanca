@@ -86,7 +86,7 @@ class WorldBank(object):
             logging.debug('Page {} of {} Complete'.format(page, pages))
         return result
 
-    def indicator(i, tries=5, iso3=True, cache=True, **kwargs):
+    def query(self, indicator, tries=5, iso3=True, cache=True, **kwargs):
         """
         kwargs include
         iso
@@ -96,18 +96,30 @@ class WorldBank(object):
         'frequency'
         """
         i = indicator
-        wb = i if i in WB_INDICATORS else WB_INDICATORS[i]
-        ind = i if i != wb else INDICATORS_WB[i]
+        if i in WB_INDICATORS:
+            # supported wb indicators
+            wb = i
+            ind = WB_INDICATORS[i]
+        elif i in INDICATORS_WB:
+            # supported indicator
+            ind = i
+            wb = INDICATORS_WB[i]
+        else:
+            # not supported indicator
+            ind = i
+            wb = i
 
-        # pop kwargs for all possible queries in indicator api
-        # if they match cached file, try to grab from cache
-        # otherwise pass directly
-        # if subset requested here, then just pass through
+        # use cache if no other API kwargs present
+        cache = cache if not kwargs else False
+
+        # get raw data
         url = self._query_url(wb, **kwargs)
         result = self._do_query(url, tries=tries)
+
+        # construct as data frame
         df = pd.DataFrame(result)
         df['indicator'] = ind
         df['country'] = df['country'].apply(lambda x: x['id'])
-        if iso3:
-            # implement this
-            pass
+        df['value'] = df['value'].astype(float)
+        df['decimal'] = df['decimal'].astype(float)
+        return df
