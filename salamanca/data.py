@@ -54,7 +54,7 @@ class CSVBackend(Backend):
         return os.path.join(CACHE_DIR, self.fname(source, indicator))
 
     def write(self, source, indicator, data):
-        data.to_csv(self.full_path(source, indicator))
+        data.to_csv(self.full_path(source, indicator), index=False)
 
     def read(self, source, indicator):
         return pd.read_csv(self.full_path(source, indicator))
