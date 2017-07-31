@@ -177,6 +177,10 @@ class WorldBank(object):
         df['country'] = df['country'].apply(lambda x: x['id'])
         df['value'] = df['value'].astype(float)
         df['decimal'] = df['decimal'].astype(float)
+        try:
+            df['date'] = df['date'].astype(int)
+        except:
+            pass
 
         # write to disc if we're caching
         if use_cache and (not exists or overwrite):

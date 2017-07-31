@@ -91,7 +91,7 @@ def test_wb_query_cache():
     df = wb.query(ind)
     assert db.exists(source, ind)
 
-    obs = float(df[(df.country == 'AF') & (df.date == '1992')]['value'])
+    obs = float(df[(df.country == 'AF') & (df.date == 1992)]['value'])
     exp = 43.507299
     assert_almost_equal(obs, exp)
 
