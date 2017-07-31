@@ -3,9 +3,9 @@ import json
 import logging
 import os
 import urllib
+import warnings
 
 import pandas as pd
-
 
 CACHE_DIR = os.path.expanduser(
     os.path.join('~', '.local', 'salamanca', 'data'))
@@ -17,6 +17,50 @@ WB_INDICATORS = {
 INDICATORS_WB = {d: k for k, d in WB_INDICATORS.items()}
 
 WB_URL = 'http://api.worldbank.org/en/countries/{iso}/indicators'
+
+
+def backend():
+    # implement configuration reading here
+    return CSVBackend()
+
+
+class Backend(object):
+    """Abstract base class for on-disc data backends"""
+
+    def __init__(self):
+        if not os.path.exists(CACHE_DIR):
+            os.makedirs(CACHE_DIR)
+
+    def write(self, source, indicator, data):
+        raise NotImplementedError()
+
+    def read(self, source, indicator):
+        raise NotImplementedError()
+
+    def exists(self, source, indicator):
+        raise NotImplementedError()
+
+
+class CSVBackend(Backend):
+    """Backend class for CSV files"""
+
+    def __init__(self):
+        super(CSVBackend, self).__init__()
+
+    def fname(self, source, indicator):
+        return '{}_{}.csv'.format(source, indicator)
+
+    def full_path(self, source, indicator):
+        return os.path.join(CACHE_DIR, self.fname(source, indicator))
+
+    def write(self, source, indicator, data):
+        data.to_csv(self.full_path(source, indicator))
+
+    def read(self, source, indicator):
+        return pd.read_csv(self.full_path(source, indicator))
+
+    def exists(self, source, indicator):
+        return os.path.exists(self.full_path(source, indicator))
 
 
 @contextlib.contextmanager
@@ -57,7 +101,8 @@ class WorldBank(object):
 
     def _query_url(self, wb_ind, **kwargs):
         iso = kwargs.pop('iso', 'all')
-        url = '{}/{}?format=json'.format(WB_URL.format(iso=iso), wb_ind)
+        url = '{}/{}?format=json&per_page=1000'.format(
+            WB_URL.format(iso=iso), wb_ind)
         urlargs = ''
         for arg in self.query_args:
             if arg in kwargs:
@@ -86,13 +131,13 @@ class WorldBank(object):
             logging.debug('Page {} of {} Complete'.format(page, pages))
         return result
 
-    def query(self, indicator, tries=5, iso3=True, cache=True, **kwargs):
+    def query(self, indicator, tries=5, iso3=True, use_cache=True, overwrite=False, **kwargs):
         """
         kwargs include
         iso
-        'date', 
-        'MRV', 
-        'Gapfill', 
+        'date',
+        'MRV',
+        'Gapfill',
         'frequency'
         """
         i = indicator
@@ -110,9 +155,19 @@ class WorldBank(object):
             wb = i
 
         # use cache if no other API kwargs present
-        cache = cache if not kwargs else False
+        if use_cache and kwargs:
+            warnings.warn('Can not cache queries with additional arguments')
+            use_cache = False
 
-        # get raw data
+        # read from disc if it already exists
+        if use_cache:
+            db = backend()
+            source = 'wb'
+            exists = db.exists(source, ind)
+            if exists:
+                return db.read(source, ind)
+
+        # otherwise get raw data
         url = self._query_url(wb, **kwargs)
         result = self._do_query(url, tries=tries)
 
@@ -122,4 +177,9 @@ class WorldBank(object):
         df['country'] = df['country'].apply(lambda x: x['id'])
         df['value'] = df['value'].astype(float)
         df['decimal'] = df['decimal'].astype(float)
+
+        # write to disc if we're caching
+        if use_cache and (not exists or overwrite):
+            db.write(source, ind, df)
+
         return df
