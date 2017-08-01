@@ -1,6 +1,10 @@
+import numpy as np
 
 
-class CurrencyTranslator(object):
+from salamanca import data
+
+
+class Translator(object):
     """An object to translate between national currencies in different years
 
     By default, inflation is calculated using GDP Deflators (though CPI is
@@ -13,12 +17,14 @@ class CurrencyTranslator(object):
     http://www.iiasa.ac.at/web/home/research/Flagship-Projects/Global-Energy-Assessment/GEA_Annex_II.pdf
     """
 
-    def __init__(self, base=None):
-        data = Data(base=base).init()
-        self._cpi = data.cpi
-        self._gdp_deflator = data.gdp_deflator
-        self._xr = data.exchange_rate
-        self._ppp_to_mer = data.ppp_to_mer
+    def __init__(self):
+        reshape = lambda df: \
+            df.pivot(index='country', columns='date', values='value')
+        wb = data.WorldBank()
+        self._cpi = reshape(wb.query('cpi'))
+        self._gdp_deflator = reshape(wb.query('gdp_deflator'))
+        self._xr = reshape(wb.query('exchange_rate'))
+        self._ppp_to_mer = reshape(wb.query('ppp_to_mer'))
 
     def inflation(self, iso, fromyr, toyr, method=None):
         """Calculate inflation for a country
@@ -40,8 +46,8 @@ class CurrencyTranslator(object):
         if np.isnan(x):
             warnings.warn(
                 'Bad currency translation for {}, '
-                'falling back to USA inflation rates'.format(iso))
-            x = self.inflation('USA', fromyr, toyr, method=method)
+                'falling back to US inflation rates'.format(iso))
+            x = self.inflation('US', fromyr, toyr, method=method)
         return x
 
     def exchange(self, x, iso=None, yr=None, units='MER',
@@ -77,7 +83,7 @@ class CurrencyTranslator(object):
         fromiso = fromiso or iso
         fromyr = fromyr or yr
 
-        toiso = toiso or 'USA'
+        toiso = toiso or 'US'
         toyr = toyr or yr
 
         # is using special inusd option, do full calculation and return
@@ -86,10 +92,10 @@ class CurrencyTranslator(object):
                 raise ValueError(
                     'iso parameter must have a value if usd=True')
             savex = x
-            x = self.exchange(x, fromiso='USA', toiso=iso,
+            x = self.exchange(x, fromiso='US', toiso=iso,
                               yr=fromyr, units=units)
             x *= self.inflation(iso, fromyr, toyr, method=inflation_method)
-            x = self.exchange(x, fromiso=iso, toiso='USA',
+            x = self.exchange(x, fromiso=iso, toiso='US',
                               yr=toyr, units=units)
             return x
 
@@ -114,7 +120,3 @@ class CurrencyTranslator(object):
             x *= self.inflation(toiso, fromyr, toyr, method=inflation_method)
 
         return x
-
-
-def main():
-    print('foobar')
