@@ -53,7 +53,7 @@ def main():
     }
     entry_points = {
         'console_scripts': [
-            'exchange=salamanca.currency:main',
+            'sal=salamanca.cli:main',
         ],
     }
     cmdclass = {

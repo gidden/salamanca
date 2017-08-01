@@ -258,15 +258,3 @@ class WorldBank(object):
     def ppp_to_mer(self, **kwargs):
         df = self.query('ppp_to_mer', **kwargs)
         return df
-
-
-def download_wb_data(log=False, overwrite=False):
-    # turn this into a CLI
-    if log:
-        logger = logging.getLogger()
-        logger.setLevel(logging.DEBUG)
-
-    wb = WorldBank()
-    wb.iso_metadata(overwrite=overwrite)
-    for ind in INDICATORS_WB:
-        wb.query(ind, overwrite=overwrite)
