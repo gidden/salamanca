@@ -101,8 +101,8 @@ def test_csv_backend_fname():
     assert obs == exp
 
 
-# @remote
-# @slow
+@remote
+@slow
 def test_wb_exchange_rate():
     wb = data.WorldBank()
     df = wb.exchange_rate()

@@ -18,13 +18,11 @@ class Translator(object):
     """
 
     def __init__(self):
-        reshape = lambda df: \
-            df.pivot(index='country', columns='date', values='value')
         wb = data.WorldBank()
-        self._cpi = reshape(wb.query('cpi'))
-        self._gdp_deflator = reshape(wb.query('gdp_deflator'))
-        self._xr = reshape(wb.query('exchange_rate'))
-        self._ppp_to_mer = reshape(wb.query('ppp_to_mer'))
+        self._cpi = wb.to_wide(wb.cpi()).set_index('country')
+        self._gdp_deflator = wb.to_wide(wb.gdp_deflator()).set_index('country')
+        self._xr = wb.to_wide(wb.exchange_rate()).set_index('country')
+        self._ppp_to_mer = wb.to_wide(wb.ppp_to_mer()).set_index('country')
 
     def inflation(self, iso, fromyr, toyr, method=None):
         """Calculate inflation for a country
@@ -47,7 +45,7 @@ class Translator(object):
             warnings.warn(
                 'Bad currency translation for {}, '
                 'falling back to US inflation rates'.format(iso))
-            x = self.inflation('US', fromyr, toyr, method=method)
+            x = self.inflation('USA', fromyr, toyr, method=method)
         return x
 
     def exchange(self, x, iso=None, yr=None, units='MER',
@@ -83,7 +81,7 @@ class Translator(object):
         fromiso = fromiso or iso
         fromyr = fromyr or yr
 
-        toiso = toiso or 'US'
+        toiso = toiso or 'USA'
         toyr = toyr or yr
 
         # is using special inusd option, do full calculation and return
@@ -92,10 +90,10 @@ class Translator(object):
                 raise ValueError(
                     'iso parameter must have a value if usd=True')
             savex = x
-            x = self.exchange(x, fromiso='US', toiso=iso,
+            x = self.exchange(x, fromiso='USA', toiso=iso,
                               yr=fromyr, units=units)
             x *= self.inflation(iso, fromyr, toyr, method=inflation_method)
-            x = self.exchange(x, fromiso=iso, toiso='US',
+            x = self.exchange(x, fromiso=iso, toiso='USA',
                               yr=toyr, units=units)
             return x
 
@@ -109,6 +107,7 @@ class Translator(object):
                 # rate, see http://data.worldbank.org/indicator/PA.NUS.PPPC.RF
                 xr_1 *= self._ppp_to_mer.loc[fromiso][fromyr]
                 xr_2 *= self._ppp_to_mer.loc[toiso][toyr]
+
             x *= xr_2 / xr_1
         elif iso is not None:
             # only account for inflation in same country, no exchanging
