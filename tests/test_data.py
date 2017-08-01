@@ -67,10 +67,8 @@ def test_wb_query():
                   frequency='M', use_cache=False)
     obs = df[df.date == '2017M06'].set_index('country')
     exp = pd.DataFrame({
-        'country': ['CN', 'IN'],
+        'country': ['CHN', 'IND'],
         'date': ['2017M06', '2017M06'],
-        'decimal': [0.0, 0.0],
-        'indicator': ['DPANUSSPF', 'DPANUSSPF'],
         'value': [6.80702272727, 64.44736363636],
     }).set_index('country')
     assert_frame_equal(obs, exp)
@@ -91,7 +89,7 @@ def test_wb_query_cache():
     df = wb.query(ind)
     assert db.exists(source, ind)
 
-    obs = float(df[(df.country == 'AF') & (df.date == 1992)]['value'])
+    obs = float(df[(df.country == 'AFG') & (df.date == 1992)]['value'])
     exp = 43.507299
     assert_almost_equal(obs, exp)
 
@@ -101,3 +99,13 @@ def test_csv_backend_fname():
     obs = db.fname('foo', 'bar')
     exp = 'foo_bar.csv'
     assert obs == exp
+
+
+# @remote
+# @slow
+def test_wb_exchange_rate():
+    wb = data.WorldBank()
+    df = wb.exchange_rate()
+    obs = float(df[(df.country == 'AUT') & (df.date == 2015)]['value'])
+    exp = 0.902
+    assert_almost_equal(obs, exp, eps=1e-3)

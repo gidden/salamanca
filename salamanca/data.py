@@ -12,7 +12,7 @@ CACHE_DIR = os.path.expanduser(
 
 WB_INDICATORS = {
     'SP.POP.TOTL': 'total_population',
-    'PA.NUS.PPP': 'ppp_to_mer',
+    'PA.NUS.PPPC.RF': 'ppp_to_mer',
     'FP.CPI.TOTL': 'cpi',
     'PA.NUS.FCRF': 'exchange_rate',
     'NY.GDP.DEFL.ZS': 'gdp_deflator',
@@ -21,6 +21,16 @@ WB_INDICATORS = {
 INDICATORS_WB = {d: k for k, d in WB_INDICATORS.items()}
 
 WB_URL = 'http://api.worldbank.org/en/countries/{iso}/indicators'
+
+EU_COUNTRIES = [
+    'AUT', 'BEL', 'CYP',
+    'DEU', 'ESP', 'EST',
+    'FIN', 'FRA', 'GRC',
+    'IRL', 'ITA', 'LTU',
+    'LUX', 'LVA', 'MLT',
+    'NLD', 'PRT', 'SVK',
+    'SVN',
+]
 
 
 def backend():
@@ -58,7 +68,8 @@ class CSVBackend(Backend):
         return os.path.join(CACHE_DIR, self.fname(source, indicator))
 
     def write(self, source, indicator, data):
-        data.to_csv(self.full_path(source, indicator), index=False)
+        data.to_csv(self.full_path(source, indicator),
+                    index=False, encoding='utf-8')
 
     def read(self, source, indicator):
         return pd.read_csv(self.full_path(source, indicator))
@@ -135,7 +146,7 @@ class WorldBank(object):
             logging.debug('Page {} of {} Complete'.format(page, pages))
         return result
 
-    def query(self, indicator, tries=5, iso3=True, use_cache=True, overwrite=False, **kwargs):
+    def query(self, indicator, tries=5, use_cache=True, overwrite=False, **kwargs):
         """
         kwargs include
         iso
@@ -172,16 +183,18 @@ class WorldBank(object):
                 return db.read(source, ind)
 
         # otherwise get raw data
+        mapping = self.iso_metadata(map_cols=['iso2Code', 'id'])
         url = self._query_url(wb, **kwargs)
         result = self._do_query(url, tries=tries)
 
         # construct as data frame
-        df = pd.DataFrame(result)
-        df['indicator'] = ind
+        df = pd.DataFrame(result).drop(['decimal', 'indicator'], axis=1)
         df['country'] = df['country'].apply(lambda x: x['id'])
         df['value'] = df['value'].astype(float)
-        df['decimal'] = df['decimal'].astype(float)
+        # map iso2 ids from rest api to iso3
+        df['country'] = df['country'].map(mapping)
         try:
+            # convert years if possible
             df['date'] = df['date'].astype(int)
         except:
             pass
@@ -192,13 +205,68 @@ class WorldBank(object):
 
         return df
 
+    def iso_metadata(self, overwrite=False, map_cols=None):
+        db = backend()
+        source = 'wb'
+        ind = 'iso_mapping'
+        if overwrite or not db.exists(source, ind):
+            url = 'http://api.worldbank.org/countries?format=json&per_page=1000'
+            with query_rest_api(url) as x:
+                df = pd.DataFrame(x[1])
+                idcols = ['adminregion', 'incomeLevel',
+                          'lendingType', 'region']
+                for col in idcols:
+                    df[col] = df[col].apply(lambda x: x['id'])
+            db.write(source, ind, df)
 
-def download_wb_data(log=False):
+        df = db.read(source, ind)
+        if map_cols:
+            df = df[map_cols].set_index(map_cols[0])[map_cols[1]]
+        return df
+
+    def to_wide(self, df):
+        return df.pivot(index='country',
+                        columns='date',
+                        values='value').reset_index()
+
+    def to_long(self, df):
+        return (df
+                .melt(id_vars='country', value_vars=df.columns[1:])
+                .sort_values(['country', 'date'], ascending=[True, False])
+                .reset_index(drop=True))
+
+    def _merge_eu(self, df):
+        df = self.to_wide(df).set_index('country')
+        df.loc[EU_COUNTRIES] = df.loc[EU_COUNTRIES].fillna(df.loc['EMU'])
+        df = self.to_long(df.reset_index())
+        return df
+
+    def cpi(self, **kwargs):
+        df = self.query('cpi', **kwargs)
+        return df
+
+    def exchange_rate(self, **kwargs):
+        df = self.query('exchange_rate', **kwargs)
+        # update newer currency unions
+        df = self._merge_eu(df)
+        return df
+
+    def gdp_deflator(self, **kwargs):
+        df = self.query('gdp_deflator', **kwargs)
+        return df
+
+    def ppp_to_mer(self, **kwargs):
+        df = self.query('ppp_to_mer', **kwargs)
+        return df
+
+
+def download_wb_data(log=False, overwrite=False):
     # turn this into a CLI
     if log:
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
 
     wb = WorldBank()
+    wb.iso_metadata(overwrite=overwrite)
     for ind in INDICATORS_WB:
-        wb.query(ind)
+        wb.query(ind, overwrite=overwrite)
