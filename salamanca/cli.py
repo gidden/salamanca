@@ -40,7 +40,29 @@ COMMANDS['download_wb'] = (
 # Currency Exchange
 #
 
-# implement this
+def exchange_cli(parser):
+    amt = 'quantity of currency'
+    parser.add_argument('amt', help=amt, default=1.0)
+    required = parser.add_argument_group('required arguments')
+    _from = '(iso, year) a 3-letter ISO code for the origin country and origin year'
+    required.add_argument('-f', '--from', help=_from, nargs=2, required=True)
+    _to = '(iso, year) a 3-letter ISO code for the destination country and destination year'
+    required.add_argument('-t', '--to', help=_to, nargs=2, required=True)
+
+
+def exchange(*args, **kwargs):
+    kwargs.pop('command')
+    amt = kwargs.pop('amt', 1)
+    xlator = currency.Translator()
+    return xlator.exchange(amt, **kwargs)
+
+
+COMMANDS['exchange'] = (
+    """Exchange currency from one country/year to another.""",
+    exchange_cli,
+    exchange,
+)
+
 
 def main():
     descr = """
@@ -62,6 +84,7 @@ def main():
     cmd = args.command
     cmd_func = COMMANDS[cmd][2]
     cmd_func(**vars(args))
+
 
 if __name__ == '__main__':
     main()
