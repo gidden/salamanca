@@ -2,10 +2,15 @@ import contextlib
 import json
 import logging
 import os
-import urllib
 import warnings
 
 import pandas as pd
+
+try:  # py2
+    from urllib import urlopen
+except ImportError:  # py3
+    from urllib.request import urlopen
+
 
 CACHE_DIR = os.path.expanduser(
     os.path.join('~', '.local', 'salamanca', 'data'))
