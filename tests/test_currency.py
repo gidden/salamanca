@@ -150,11 +150,16 @@ def test_aut_2005_2010_usd_ppp():
 
 
 def test_cli():
-    obs = cli.exchange(command='exchange', amt=20, iso='AUT', fromyr=2005,
-                       toyr=2010, inusd=True, units='PPP')
-    exp = 20 * (xr_aut_2005 * ppp_to_mer_aut_2005) * \
-        (100. / gdef_aut_2005) / \
-        (xr_aut_2010 * ppp_to_mer_aut_2010)
+    kwargs = {
+        'amt': 20,
+        'from': ('CAN', '2005'),
+        'to': ('AUT', '2010'),
+        'units': 'PPP',
+        'meth': 'deflator',
+    }
+    obs = cli.exchange(**kwargs)
+    exp = 20 * (xr_aut_2005 / xr_can_2005) / (gdef_aut_2005 / 100.)
+    exp *= ppp_to_mer_aut_2005 / ppp_to_mer_can_2005
     assert_almost_equal(obs, exp)
 
 

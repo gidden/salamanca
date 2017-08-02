@@ -24,7 +24,7 @@ class Translator(object):
         self._xr = wb.to_wide(wb.exchange_rate()).set_index('country')
         self._ppp_to_mer = wb.to_wide(wb.ppp_to_mer()).set_index('country')
 
-    def inflation(self, iso, fromyr, toyr, method=None):
+    def inflation(self, iso, fromyr, toyr, method='deflator'):
         """Calculate inflation for a country
 
         Parameters
@@ -38,7 +38,7 @@ class Translator(object):
         method: str
             one of: cpi, deflator (default: deflator)
         """
-        method = method or 'deflator'
+        method = method.lower()
         df = self._cpi if method == 'cpi' else self._gdp_deflator
         x = df.loc[iso][toyr] / df.loc[iso][fromyr]
         if np.isnan(x):
@@ -51,7 +51,7 @@ class Translator(object):
     def exchange(self, x, iso=None, yr=None, units='MER',
                  fromiso=None, fromyr=None,
                  toiso=None, toyr=None,
-                 inusd=False, inflation_method=None):
+                 inusd=False, inflation_method='deflator'):
         """Exchange currency from one country/year to another.
 
         Parameters
@@ -79,10 +79,16 @@ class Translator(object):
             the argument to provide to `inflation()`
         """
         fromiso = fromiso or iso
+        fromiso = fromiso.upper()
         fromyr = fromyr or yr
+        fromyr = int(fromyr)
 
         toiso = toiso or 'USA'
+        toiso = toiso.upper()
         toyr = toyr or yr
+        toyr = int(toyr)
+
+        units = units.upper()
 
         # is using special inusd option, do full calculation and return
         if inusd:

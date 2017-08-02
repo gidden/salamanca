@@ -41,21 +41,40 @@ COMMANDS['download_wb'] = (
 #
 
 def exchange_cli(parser):
-    amt = 'quantity of currency'
-    parser.add_argument('amt', help=amt, default=1.0)
+    amt = 'quantity of currency (default: 1.0)'
+    parser.add_argument('-x', '--amt', help=amt, default=1.0)
+    units = "units in which to do conversion [MER or PPP] (default: MER)"
+    parser.add_argument('-u', '--units', help=units, default='MER')
+    meth = "method to use to do conversion [deflator or cpi] (default: deflator)"
+    parser.add_argument('-m', '--meth', help=meth, default='deflator')
+
     required = parser.add_argument_group('required arguments')
-    _from = '(iso, year) a 3-letter ISO code for the origin country and origin year'
-    required.add_argument('-f', '--from', help=_from, nargs=2, required=True)
-    _to = '(iso, year) a 3-letter ISO code for the destination country and destination year'
-    required.add_argument('-t', '--to', help=_to, nargs=2, required=True)
+    _from = """
+    ISO: 3-letter ISO code for the origin country, YEAR: origin year
+    """
+    required.add_argument('-f', '--from', help=_from,
+                          nargs=2, metavar=('ISO', 'YEAR'), required=True)
+    _to = """
+    ISO: 3-letter ISO code for the destination country, YEAR: destination year
+    """
+    required.add_argument('-t', '--to', help=_to,
+                          nargs=2, metavar=('ISO', 'YEAR'), required=True)
 
 
-def exchange(*args, **kwargs):
-    kwargs.pop('command')
-    amt = kwargs.pop('amt', 1)
+def exchange(**kwargs):
+    amt = kwargs['amt']
+    fromiso, fromyr = kwargs['from']
+    toiso, toyr = kwargs['to']
+    units = kwargs['units']
+    inflation_method = kwargs['meth']
+
     xlator = currency.Translator()
-    return xlator.exchange(amt, **kwargs)
-
+    ret = xlator.exchange(amt,
+                          fromiso=fromiso, fromyr=fromyr,
+                          toiso=toiso, toyr=toyr,
+                          units=units, inflation_method=inflation_method)
+    print(ret)
+    return ret
 
 COMMANDS['exchange'] = (
     """Exchange currency from one country/year to another.""",
@@ -77,7 +96,10 @@ def main():
     for cmd in COMMANDS:
         cli_help = COMMANDS[cmd][0]
         cli_func = COMMANDS[cmd][1]
-        subparser = subparsers.add_parser(cmd, help=cli_help)
+        subparser = subparsers.add_parser(
+            cmd,
+            help=cli_help,
+        )
         cli_func(subparser)
 
     args = parser.parse_args()
