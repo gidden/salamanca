@@ -100,7 +100,7 @@ def query_rest_api(url, tries=5, asjson=True):
     n = 0
     while n < tries:
         try:
-            query = urllib.urlopen(url)
+            query = urlopen(url)
             result = query.read()
             if asjson:
                 result = json.loads(result)
