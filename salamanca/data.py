@@ -2,14 +2,10 @@ import contextlib
 import json
 import logging
 import os
+import requests
 import warnings
 
 import pandas as pd
-
-try:  # py2
-    from urllib import urlopen
-except ImportError:  # py3
-    from urllib.request import urlopen
 
 
 CACHE_DIR = os.path.expanduser(
@@ -100,12 +96,10 @@ def query_rest_api(url, tries=5, asjson=True):
     n = 0
     while n < tries:
         try:
-            query = urlopen(url)
-            result = query.read()
+            result = requests.get(url)
             if asjson:
-                result = json.loads(result)
+                result = result.json()
             yield result
-            query.close()
             break
         except IOError:
             n += 1
