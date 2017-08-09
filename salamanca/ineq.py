@@ -185,6 +185,18 @@ class LogNormal(object):
         shape, scale = self.params(**kwargs)
         return lognorm.cdf(x, shape, scale=scale)
 
+    def below_threshold(self, threshold, **kwargs):
+        """Returns the fraction of population below a given income threshold (equivalent
+        to `cdf`).
+
+        Parameters
+        ----------
+        threshold : numeric
+            income threshold
+        """
+        shape, scale = self.params(**kwargs)
+        return lognorm.cdf(threshold, shape, scale=scale)
+
     def lorenz(self, x, **kwargs):
         r"""The Lorenz curve for log-normal distributions is defined as:
 

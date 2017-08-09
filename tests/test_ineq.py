@@ -172,6 +172,14 @@ def test_ln_lorenz_theil():
     assert_almost_equal(obs, exp)
 
 
+def test_ln_threshold():
+    # equivalent to cdf function
+    dist = iq.LogNormal()
+    exp = dist.cdf(0.4, gini=0.5)
+    obs = dist.below_threshold(0.4, gini=0.5)
+    assert_almost_equal(exp, obs)
+
+
 def test_ln_scipy_funcs():
     # these just need to run without error, they pass directly to scipy
     dist = iq.LogNormal()
