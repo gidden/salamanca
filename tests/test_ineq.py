@@ -138,3 +138,46 @@ def test_lndata_raises_missing():
     data = iq.LogNormalData(gini=0.5, mean=False)
     with pytest.raises(ValueError):
         data.check()
+
+
+def test_ln_params_mean():
+    dist = iq.LogNormal(inc=1000, gini=0.5, mean=True)
+    obs_shape, obs_scale = dist.params()
+    exp_shape = 0.953872
+    exp_scale = 634.48830545
+    assert_almost_equal(obs_shape, exp_shape)
+    assert_almost_equal(obs_scale, exp_scale)
+
+
+def test_ln_params_median():
+    dist = iq.LogNormal(inc=1000, gini=0.5, mean=True)
+    obs_shape, obs_scale = dist.params(mean=False)
+    exp_shape = 0.953872
+    exp_scale = 1000
+    assert_almost_equal(obs_shape, exp_shape)
+    assert_almost_equal(obs_scale, exp_scale)
+
+
+def test_ln_lorenz_gini():
+    dist = iq.LogNormal()
+    obs = dist.lorenz(0.4, gini=0.5)
+    exp = 0.11367378
+    assert_almost_equal(obs, exp)
+
+
+def test_ln_lorenz_theil():
+    dist = iq.LogNormal()
+    obs = dist.lorenz(0.4, theil=0.5)
+    exp = 0.1050397
+    assert_almost_equal(obs, exp)
+
+
+def test_ln_scipy_funcs():
+    # these just need to run without error, they pass directly to scipy
+    dist = iq.LogNormal()
+    dist.ppf(0.4, gini=0.5)
+    dist.cdf(0.4, gini=0.5)
+    dist.mean(gini=0.5)
+    dist.median(gini=0.5)
+    dist.var(gini=0.5)
+    dist.std(gini=0.5)

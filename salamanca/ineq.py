@@ -187,11 +187,11 @@ class LogNormal(object):
         return shape, scale
 
     def ppf(self, x, **kwargs):
-        shape, scale = params(**kwargs)
+        shape, scale = self.params(**kwargs)
         return lognorm.cdf(x, shape, scale=scale)
 
     def cdf(self, x, **kwargs):
-        shape, scale = params(**kwargs)
+        shape, scale = self.params(**kwargs)
         return lognorm.cdf(x, shape, scale=scale)
 
     def lorenz(self, x, **kwargs):
@@ -199,17 +199,21 @@ class LogNormal(object):
 
         $$L(x) = \phi \left( \phi^{-1} (x) - \sigma \right)$$
         """
-        shape, scale = params(**kwargs)
+        shape, scale = self.params(**kwargs)
         return norm.cdf(norm.ppf(x) - shape)
 
     def mean(self, **kwargs):
-        shape, scale = params(**kwargs)
+        shape, scale = self.params(**kwargs)
         return lognorm.mean(shape, scale=scale)
 
     def median(self, **kwargs):
-        shape, scale = params(**kwargs)
+        shape, scale = self.params(**kwargs)
         return lognorm.median(shape, scale=scale)
 
-    def mode(self, **kwargs):
-        shape, scale = params(**kwargs)
-        return lognorm.mode(shape, scale=scale)
+    def var(self, **kwargs):
+        shape, scale = self.params(**kwargs)
+        return lognorm.var(shape, scale=scale)
+
+    def std(self, **kwargs):
+        shape, scale = self.params(**kwargs)
+        return lognorm.std(shape, scale=scale)
