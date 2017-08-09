@@ -181,9 +181,14 @@ class LogNormal(object):
         return lognorm.cdf(x, shape, scale=scale)
 
     def lorenz(self, x, **kwargs):
-        """The Lorenz curve for log-normal distributions is defined as:
+        r"""The Lorenz curve for log-normal distributions is defined as:
 
-        $$L(x) = \phi \left( \phi^{-1} (x) - \sigma \right)$$
+        .. math::
+
+           L(x) = \Phi \left( \Phi^{-1} (x) - \sigma \right)
+
+        Where :math:`\Phi` is cumulative distribution function (CDF) of the standard
+        normal distribution.
         """
         shape, scale = self.params(**kwargs)
         return norm.cdf(norm.ppf(x) - shape)

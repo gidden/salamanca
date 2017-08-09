@@ -73,13 +73,6 @@ def test_wb_query_cache():
     assert_almost_equal(obs, exp)
 
 
-def test_csv_backend_fname():
-    db = data.CSVBackend()
-    obs = db.fname('foo', 'bar')
-    exp = 'foo_bar.csv'
-    assert obs == exp
-
-
 @remote
 @slow
 def test_wb_exchange_rate():

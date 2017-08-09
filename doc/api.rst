@@ -26,3 +26,11 @@ Currency Translation: :code:`salamanca.currency`
 .. automodule:: salamanca.currency
    :members:
 
+Economic Indicators: :code:`salamanca.data`
+------------------------------------------------
+
+.. module:: salamanca.data
+
+.. automodule:: salamanca.data
+   :members:
+
