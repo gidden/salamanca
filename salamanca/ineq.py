@@ -5,6 +5,9 @@ import numpy as np
 from scipy.stats import norm, lognorm
 from scipy.special import erf, erfinv
 
+# empirical limits with gini = 0.99
+MAX_THEIL = 6.64
+
 
 def gini_to_std(g):
     """$$\sigma = 2 \erf^{-1}(g)$$"""
@@ -59,8 +62,8 @@ def gini_to_theil(g, empirical=False):
         a, b, c = theil_empirical_constants()
         t = (-b + (b ** 2 - 4 * a * (c - t)) ** 0.5) / (2 * a)
 
-    assert(np.all(t <= 2.8837731469045265) and np.all(t > 0))
-
+    if not (np.all(t < MAX_THEIL) and np.all(t > 0)):
+        raise ValueError('Theil not within (0, 2.88)')
     return t
 
 
@@ -79,7 +82,7 @@ def theil_to_gini(t, empirical=False):
     empirical : bool, optional, default: False
         whether to use empirical relationship for theil
     """
-    if not (np.all(t < 2.8837731469045265) and np.all(t > 0)):
+    if not (np.all(t < MAX_THEIL) and np.all(t > 0)):
         raise ValueError('Theil not within (0, 2.88)')
 
     if empirical:
@@ -88,7 +91,8 @@ def theil_to_gini(t, empirical=False):
     s = theil_to_std(t)
     g = std_to_gini(s)
 
-    assert(np.all(g >= 0) and np.all(g <= 1))
+    if not (np.all(g > 0) and np.all(g < 1)):
+        raise ValueError('Gini not within (0, 1)')
     return g
 
 

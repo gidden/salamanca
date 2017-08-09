@@ -53,6 +53,18 @@ def test_theil_to_gini_empirical():
     assert_almost_equal(obs, exp, eps=1e-5)
 
 
+def test_gini_to_theil_close_lo():
+    # just shouldn't through
+    iq.gini_to_theil(0.01)
+    iq.gini_to_theil(0.05, empirical=True)  # emp lowers theil
+
+
+def test_gini_to_theil_close_hi():
+    # just shouldn't through
+    iq.gini_to_theil(0.99)
+    iq.gini_to_theil(0.99, empirical=True)
+
+
 def test_gini_to_theil_error():
     with pytest.raises(ValueError):
         iq.gini_to_theil(-1)
@@ -67,15 +79,15 @@ def test_gini_to_theil_error():
         iq.gini_to_theil(1.1)
 
 
-# def test_theil_to_gini_error():
-#     with pytest.raises(ValueError):
-#         iq.theil_to_gini(-1)
+def test_theil_to_gini_error():
+    with pytest.raises(ValueError):
+        iq.theil_to_gini(-1)
 
-#     with pytest.raises(ValueError):
-#         iq.theil_to_gini(0.0)
+    with pytest.raises(ValueError):
+        iq.theil_to_gini(0.0)
 
-#     with pytest.raises(ValueError):
-#         iq.theil_to_gini(1.0)
+    with pytest.raises(ValueError):
+        iq.theil_to_gini(iq.MAX_THEIL)
 
-#     with pytest.raises(ValueError):
-#         iq.theil_to_gini(1.1)
+    with pytest.raises(ValueError):
+        iq.theil_to_gini(7.0)
