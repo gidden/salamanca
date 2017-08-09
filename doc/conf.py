@@ -44,6 +44,7 @@ extensions = [
     'sphinxcontrib.programoutput',
     'sphinxcontrib.exceltable',
     'sphinx.ext.mathbase',
+    'sphinx.ext.autosummary',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

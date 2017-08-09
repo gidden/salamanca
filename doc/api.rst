@@ -8,36 +8,21 @@ Python API
     Please note that :code:`salamanca` is still in early developmental stages, thus
     all interfaces are subject to change.
 
-Input/Output: :code:`salamanca._io`
---------------------------------
+Inequality Calculations: :code:`salamanca.ineq`
+-----------------------------------------------
 
-.. module:: salamanca._io
+.. module:: salamanca.ineq
 
-.. automodule:: salamanca._io
-   :members:
-   :special-members:
-
-Harmonization: :code:`salamanca.harmonize`
----------------------------------------
-
-.. module:: salamanca.harmonize
-
-.. automodule:: salamanca.harmonize
+.. automodule:: salamanca.ineq
    :members:
 
-Methods: :code:`salamanca.methods`
--------------------------------
+.. _ScipyLogNorm: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.lognorm.html
 
-.. module:: salamanca.methods
+Currency Translation: :code:`salamanca.currency`
+------------------------------------------------
 
-.. automodule:: salamanca.methods
+.. module:: salamanca.currency
+
+.. automodule:: salamanca.currency
    :members:
-   
 
-Tools/Utilities: :code:`salamanca.utils`
--------------------------------------
-
-.. module:: salamanca.utils
-
-.. automodule:: salamanca.utils
-   :members:

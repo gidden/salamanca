@@ -8,7 +8,7 @@ Via Pip
 
 .. code-block:: bash
 
-    pip install salamanca-iamc
+    pip install salamanca
 
 From Source
 ~~~~~~~~~~~

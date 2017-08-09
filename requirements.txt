@@ -1,7 +1,11 @@
 salamanca
 argparse
+contextlib
+json
+logging
 numpy
+os
 pandas
-pyyaml
-xlrd
-xlsxwriter
+requests
+scipy
+warnings
