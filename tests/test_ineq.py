@@ -91,3 +91,50 @@ def test_theil_to_gini_error():
 
     with pytest.raises(ValueError):
         iq.theil_to_gini(7.0)
+
+
+def test_lndata_init():
+    data = iq.LogNormalData(inc=4.2, gini=0.5)
+    assert data.inc == 4.2
+    assert data.gini == 0.5
+    assert not hasattr(data, 'mean')
+
+
+def test_lndata_defaults():
+    data = iq.LogNormalData(inc=4.2)
+    data.add_defaults(copy=False)
+    assert data.inc == 4.2
+    assert data.mean is True
+
+
+def test_lndata_defaults_copy():
+    data = iq.LogNormalData(inc=4.2)
+    newdata = data.add_defaults(copy=True)
+    assert data.inc == 4.2
+    assert not hasattr(data, 'mean')
+    assert newdata.inc == 4.2
+    assert newdata.mean is True
+
+
+def test_lndata_raises_none():
+    data = iq.LogNormalData(inc=4.2)
+    data.add_defaults()
+    with pytest.raises(ValueError):
+        data.check()
+
+
+def test_lndata_raises_both():
+    data = iq.LogNormalData(inc=4.2, theil=1.0, gini=0.5)
+    data.add_defaults()
+    with pytest.raises(ValueError):
+        data.check()
+
+
+def test_lndata_raises_missing():
+    data = iq.LogNormalData(gini=0.5, inc=1)
+    with pytest.raises(ValueError):
+        data.check()
+
+    data = iq.LogNormalData(gini=0.5, mean=False)
+    with pytest.raises(ValueError):
+        data.check()

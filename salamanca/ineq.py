@@ -1,4 +1,4 @@
-import copy
+from copy import deepcopy
 
 import numpy as np
 
@@ -114,7 +114,7 @@ class AttrObject(object):
         override : bool, optional, default: True
             overrides attributes if they already exist on the object
         """
-        x = copy.deepcopy(self) if copy else self
+        x = deepcopy(self) if copy else self
         for k, v in kwargs.items():
             if override or getattr(x, k, None) is None:
                 setattr(x, k, v)
