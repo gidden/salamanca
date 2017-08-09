@@ -4,8 +4,7 @@ from salamanca import cli
 from salamanca.currency import Translator
 
 
-def assert_almost_equal(x, y, eps=1e-6):
-    assert abs(x - y) < eps
+from utils import assert_almost_equal
 
 
 US_AUT_2010 = 0.75504495198999999

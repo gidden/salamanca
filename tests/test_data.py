@@ -1,4 +1,3 @@
-import pytest
 import os
 
 import pandas as pd
@@ -7,27 +6,7 @@ from pandas.util.testing import assert_frame_equal
 
 from salamanca import data
 
-# decorator for test requiring internet
-remote = pytest.mark.skipif(
-    not pytest.config.getoption("--remote"),
-    reason="need --remote option to run"
-)
-
-# decorator for slow tests
-slow = pytest.mark.skipif(
-    not pytest.config.getoption("--slow"),
-    reason="need --slow option to run"
-)
-
-
-def assert_almost_equal(x, y, eps=1e-6):
-    assert abs(x - y) < eps
-
-
-def logging_on():
-    import logging
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+from utils import assert_almost_equal, logging_on, remote, slow
 
 
 def test_wb_query_url():
