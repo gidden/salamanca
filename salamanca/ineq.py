@@ -104,8 +104,8 @@ def theil_to_gini(t, empirical=False):
 class LogNormalData(AttrObject):
     """Object for storing and updating LogNormal distribution data"""
 
-    def _get(self, x):
-        return getattr(self, x, None)
+    def _has(self, x):
+        return getattr(self, x, None) is None
 
     def add_defaults(self, copy=True):
         # add new defaults for kwargs here
@@ -119,16 +119,16 @@ class LogNormalData(AttrObject):
 
     def check(self):
         x = ('theil', 'gini')
-        bad = all(self._get(_) is None for _ in x)
+        bad = all(self._has(_) for _ in x)
         if bad:
             raise ValueError('Must use either theil or gini')
-        bad = all(self._get(_) is not None for _ in x)
+        bad = all(not self._has(_) for _ in x)
         if bad:
             raise ValueError('Cannot use both theil and gini')
 
         x = ('inc', 'mean')
         for _ in x:
-            if self._get(_) is None:
+            if self._has(_):
                 raise ValueError('Must declare value for ' + _)
         return self
 
@@ -170,10 +170,15 @@ class LogNormal(object):
             else data.inc
         return shape, scale
 
+    def pdf(self, x, **kwargs):
+        """See ScipyLogNorm_"""
+        shape, scale = self.params(**kwargs)
+        return lognorm.pdf(x, shape, scale=scale)
+
     def ppf(self, x, **kwargs):
         """See ScipyLogNorm_"""
         shape, scale = self.params(**kwargs)
-        return lognorm.cdf(x, shape, scale=scale)
+        return lognorm.ppf(x, shape, scale=scale)
 
     def cdf(self, x, **kwargs):
         """See ScipyLogNorm_"""

@@ -10,9 +10,8 @@ Release v\ |version|.
 .. image:: https://coveralls.io/repos/github/gidden/salamanca/badge.svg?branch=master
     :target: https://coveralls.io/github/gidden/salamanca?branch=master
    
-**salamanca** is a Python package and Command Line Interface (CLI) for
-harmonization of IAM results with historical data sources. Currently, emissions
-trajectories are supported.
+**salamanca** is a Python package for working with socio-economic data and
+models. It provides a robust API and and Command Line Interface (CLI).
 
 Documentation
 -------------
@@ -20,7 +19,7 @@ Documentation
 .. toctree::
    :maxdepth: 1
 
-   tutorial.ipynb
+   starting
    install
    api
    cli
