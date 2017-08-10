@@ -3,7 +3,7 @@ from __future__ import print_function
 
 import shutil
 
-from setuptools import setup, Command
+from setuptools import setup, Command, find_packages
 from setuptools.command.install import install
 
 # Thanks to http://patorjk.com/software/taag/
@@ -45,9 +45,7 @@ class Cmd(install):
 def main():
     print(logo)
 
-    packages = [
-        'salamanca',
-    ]
+    packages = find_packages()
     pack_dir = {
         'salamanca': 'salamanca',
     }
