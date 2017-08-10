@@ -22,6 +22,7 @@ Documentation
    starting
    install
    api
+   models
    cli
 
 

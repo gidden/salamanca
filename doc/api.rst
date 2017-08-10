@@ -8,6 +8,7 @@ Python API
     Please note that :code:`salamanca` is still in early developmental stages, thus
     all interfaces are subject to change.
 
+
 Inequality Calculations: :code:`salamanca.ineq`
 -----------------------------------------------
 
