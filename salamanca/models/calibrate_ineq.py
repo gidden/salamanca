@@ -2,9 +2,9 @@ import pyomo.environ as mo
 
 
 def position_rule(m, idx):
-    r"""Returns |matha|
+    r"""|pos|
 
-    .. |matha| replace:: :math:`\sigma = 2 * erf^{-1}(g)`
+    .. |pos| replace:: :math:`t_{r-1} \leq t_{r} \forall r \in {r_2 \ldots r_N}`
     """
     if idx == 0:
         return mo.Constraint.Skip
@@ -12,9 +12,9 @@ def position_rule(m, idx):
 
 
 def diff_rule(m, idx):
-    r"""Returns |mathb|
+    r"""|diff_hi|
 
-    .. |mathb| replace:: :math:`\sigma = 2 * erf^{-1}(g)`
+    .. |diff_hi| replace:: :math:`t_r - t_{r-1} \geq 0.8 (t^*_r - t^*_{r-1}) \forall r \in {r_2 \ldots r_N}`
     """
     if idx == 0:
         return mo.Constraint.Skip
@@ -41,11 +41,9 @@ class Model(object):
     """
     Comprised of
 
-    | |matha|
-    | |mathb|
+    | |pos|
+    | |diff_hi|
 
-    | Subject to
-    | |mathb|
     """
 
     def __init__(self):
