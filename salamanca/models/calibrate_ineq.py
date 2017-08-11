@@ -1,4 +1,9 @@
+from __future__ import division
+
+import numpy as np
+import pandas as pd
 import pyomo.environ as mo
+
 
 from salamanca import ineq
 
@@ -42,15 +47,15 @@ def min_diff_obj(m):
 class Model(object):
     """Base class for Inequality Calibration Models"""
 
-    def __init__(self, natdata, subdata, empricial=False):
+    def __init__(self, natdata, subdata, empirical=False):
         self.natdata = natdata
         self.subdata = subdata
         self.empirical = empirical
 
-        self._setup_model_data()
+        self._setup_model_data(natdata, subdata)
         self._check_model_data()
 
-    def _setup_model_data(natdata, subdata):
+    def _setup_model_data(self, natdata, subdata):
         n, i, gini = 'n', 'i', 'gini'
         ndf, sdf = self.natdata, self.subdata
 
@@ -66,14 +71,15 @@ class Model(object):
         T_w = T - T_b
 
         # save index of sorted values
+        self.orig_idx = sdf.index
         sdf = sdf.sort_values(by=gini)
-        self.data_idx = sdf.index
+        self.sorted_idx = sdf.index
         sdf = sdf.reset_index()
         self.model_idx = sdf.index  # must be ordered
 
         # save model data
         self.model_data = {
-            'idxs': sdf.index.values,
+            'idxs': self.model_idx.values,
             'n': sdf[n].values,
             't': ineq.gini_to_theil(sdf[gini].values, empirical=self.empirical),
             'g': (sdf[n] * sdf[i]).values,
@@ -85,12 +91,12 @@ class Model(object):
     def _check_model_data(self):
         obs = self.model_data['N']
         exp = np.sum(self.model_data['n'])
-        if np.isclose(obs, exp):
+        if not np.isclose(obs, exp):
             raise ValueError('Population values do not sum to national')
 
         obs = self.model_data['G']
         exp = np.sum(self.model_data['g'])
-        if np.isclose(obs, exp):
+        if not np.isclose(obs, exp):
             raise ValueError('GDP values do not sum to national')
 
     def construct(self):
@@ -102,12 +108,19 @@ class Model(object):
         result = solver.solve(m)  # , tee=True)
         result.write()
         m.solutions.load_from(result)
-        t = pd.Series(m.t.get_values().values(),
-                      index=m.data['orig_idx'], name='thiel')
+        self.solution = pd.Series(m.t.get_values().values(), name='thiel')
         return self
 
     def result(self):
-        pass
+        n, g, i, gini = 'n', 'g', 'i', 'gini'
+        df = pd.DataFrame({
+            i: self.model_data[g] / self.model_data[n],
+            n: self.model_data[n],
+            gini: ineq.theil_to_gini(self.solution, empirical=self.empirical),
+        })
+        df.index = self.sorted_idx
+        df = df.loc[self.orig_idx]
+        return df
 
 
 class Model1(Model):

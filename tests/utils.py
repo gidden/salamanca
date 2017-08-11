@@ -1,5 +1,7 @@
 import pytest
 
+import numpy as np
+
 
 def logging_on():
     import logging
@@ -9,6 +11,11 @@ def logging_on():
 
 def assert_almost_equal(x, y, eps=1e-6):
     assert abs(x - y) < eps
+
+
+def assert_array_almost_equal(x, y, eps=1e-6):
+    assert np.all(abs(x - y) < eps)
+
 
 # decorator for test requiring internet
 remote = pytest.mark.skipif(

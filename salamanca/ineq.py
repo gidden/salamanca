@@ -66,7 +66,7 @@ def gini_to_theil(g, empirical=False):
         t = (-b + (b ** 2 - 4 * a * (c - t)) ** 0.5) / (2 * a)
 
     if not (np.all(t < MAX_THEIL) and np.all(t > 0)):
-        raise ValueError('Theil not within (0, 2.88)')
+        raise ValueError('Theil not within (0, 2.88): {}'.format(t))
     return t
 
 
@@ -88,7 +88,7 @@ def theil_to_gini(t, empirical=False):
         whether to use empirical relationship for theil
     """
     if not (np.all(t < MAX_THEIL) and np.all(t > 0)):
-        raise ValueError('Theil not within (0, 2.88)')
+        raise ValueError('Theil not within (0, 2.88): {}'.format(t))
 
     if empirical:
         a, b, c = _theil_empirical_constants()
