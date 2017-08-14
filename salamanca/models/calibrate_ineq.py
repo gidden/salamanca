@@ -142,7 +142,7 @@ class Model(object):
 
     def _setup_model_data(self, natdata, subdata):
         required = (n, i, gini) = 'n', 'i', 'gini'
-        ndf, sdf = self.natdata, self.subdata
+        ndf, sdf = self.natdata.copy(), self.subdata.copy()
         msg = 'Must include all of {} in {} data'
         if any(x not in ndf for x in required):
             raise ValueError(msg.format(required, 'national'))
@@ -211,7 +211,11 @@ class Model(object):
             gini: ineq.theil_to_gini(self.solution, empirical=self.empirical),
         })
         df.index = self.sorted_idx
+
         df = df.loc[self.orig_idx]
+        df['i_orig'] = self.subdata[i]
+        df['n_orig'] = self.subdata[n]
+        df['gini_orig'] = self.subdata[gini]
         return df
 
 

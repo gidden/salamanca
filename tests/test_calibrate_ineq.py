@@ -92,7 +92,7 @@ def test_model_data_error():
         model = Model(natdata, sdf)
 
 
-def test_Model1_solution():
+def test_Model1_full():
     natdata, subdata = data()
     model = Model1(natdata, subdata)
     model.construct()
@@ -107,7 +107,21 @@ def test_Model1_solution():
     theil_exp = exp
 
     df = model.result()
-    assert sorted(df.columns) == ['gini', 'i', 'n']
+    obs = sorted(df.columns)
+    exp = ['gini', 'gini_orig', 'i', 'i_orig', 'n', 'n_orig']
+    assert obs == exp
+
+    obs = df['gini_orig']
+    exp = subdata['gini']
+    assert_array_almost_equal(obs, exp)
+
+    obs = df['i_orig']
+    exp = subdata['i']
+    assert_array_almost_equal(obs, exp)
+
+    obs = df['n_orig']
+    exp = subdata['n']
+    assert_array_almost_equal(obs, exp)
 
 
 def test_Model1_result():
