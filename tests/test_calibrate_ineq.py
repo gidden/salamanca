@@ -93,6 +93,9 @@ def test_Model1_solution():
     assert_array_almost_equal(obs, exp)
     theil_exp = exp
 
+    df = model.result()
+    assert sorted(df.columns) == ['gini', 'i', 'n']
+
 
 def test_Model1_result():
     natdata, subdata = data()
@@ -100,14 +103,13 @@ def test_Model1_result():
     model.construct()
     model.solve()
 
-    df = model.result()
-    assert sorted(df.columns) == ['gini', 'i', 'n']
-    obs = df['gini'].values
-    exp = ineq.theil_to_gini(model.solution, empirical=False)
-    assert_array_almost_equal(obs, exp[::-1])  # back to the right order
+    # ginis in original order
+    obs = model.result()['gini'].values
+    exp = [0.45663392, 0.19798731]
+    assert_array_almost_equal(obs, exp)
 
 
-def test_Model2_solution():
+def test_Model2_result():
     natdata, subdata = data()
     model = Model2(natdata, subdata)
     model.construct()
@@ -119,7 +121,7 @@ def test_Model2_solution():
     assert_array_almost_equal(obs, exp)
 
 
-def test_Model3_solution():
+def test_Model3_result():
     natdata, subdata = data()
     model = Model3(natdata, subdata)
     model.construct()
@@ -131,7 +133,7 @@ def test_Model3_solution():
     assert_array_almost_equal(obs, exp)
 
 
-def test_Model4_solution():
+def test_Model4_result():
     natdata, subdata = data()
     model = Model4(natdata, subdata)
     model.construct()
