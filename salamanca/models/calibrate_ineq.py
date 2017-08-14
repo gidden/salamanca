@@ -116,15 +116,13 @@ def theil_sum_obj(m):
     return (lhs - rhs) ** 2
 
 
-def threshold_obj(m):
+def threshold_obj(m, factors=[1.0], weights=[1.0]):
     i = m.data['i']
     x = lambda m, idx, f: below_threshold(f * i[idx], i[idx], m.data['t'][idx])
     y = lambda m, idx, f: below_threshold(f * i[idx], i[idx], m.t[idx])
 
     # factors = [0.5, 1.0, 1.5]
     # weights = [1.0, 0.9, 0.8]
-    factors = [1.0]
-    weights = [1.0]
     n = m.data['n']
     return sum(
         (w * n[idx] * (x(m, idx, f) - y(m, idx, f))) ** 2
