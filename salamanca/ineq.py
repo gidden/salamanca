@@ -185,7 +185,6 @@ class LogNormal(object):
     def cdf(self, x, **kwargs):
         """See ScipyLogNorm_"""
         shape, scale = self.params(**kwargs)
-        print(x, shape, scale)
         return lognorm.cdf(x, shape, scale=scale)
 
     def below_threshold(self, threshold, **kwargs):
