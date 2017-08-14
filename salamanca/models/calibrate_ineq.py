@@ -85,17 +85,17 @@ def theil_sum_rule(m):
         m.data['T_w'] * m.data['G']
 
 
-def threshold_lo_rule(m, idx, f=1.0, b=0.9):
+def threshold_lo_rule(m, idx, f=1.0, b=0.9, relative=True):
     i = m.data['i'][idx]
-    x = f * i
+    x = f * i if relative else f
     rhs = below_threshold(x, i, m.data['t'][idx])
     lhs = below_threshold(x, i, m.t[idx])
     return lhs >= b * rhs
 
 
-def threshold_hi_rule(m, idx, f=1.0, b=1.1):
+def threshold_hi_rule(m, idx, f=1.0, b=1.1, relative=True):
     i = m.data['i'][idx]
-    x = f * i
+    x = f * i if relative else f
     rhs = below_threshold(x, i, m.data['t'][idx])
     lhs = below_threshold(x, i, m.t[idx])
     return lhs <= b * rhs
@@ -116,13 +116,16 @@ def theil_sum_obj(m):
     return (m.data['T_w'] - sum(_t_w(m, idx) for idx in m.idxs)) ** 2
 
 
-def threshold_obj(m, factors=[1.0], weights=[1.0]):
+def threshold_obj(m, factors=[1.0], weights=[1.0], relative=True):
     i = m.data['i']
-    x = lambda m, idx, f: below_threshold(f * i[idx], i[idx], m.data['t'][idx])
-    y = lambda m, idx, f: below_threshold(f * i[idx], i[idx], m.t[idx])
+    if relative:
+        x = lambda m, idx, f: below_threshold(
+            f * i[idx], i[idx], m.data['t'][idx])
+        y = lambda m, idx, f: below_threshold(f * i[idx], i[idx], m.t[idx])
+    else:
+        x = lambda m, idx, f: below_threshold(f, i[idx], m.data['t'][idx])
+        y = lambda m, idx, f: below_threshold(f, i[idx], m.t[idx])
 
-    # factors = [0.5, 1.0, 1.5]
-    # weights = [1.0, 0.9, 0.8]
     n = m.data['n']
     return sum(
         (w * n[idx] * (x(m, idx, f) - y(m, idx, f))) ** 2
@@ -254,7 +257,7 @@ class Model1(Model):
 
 class Model2(Model):
     """
-    Minimize L2-norm under position and constrainted CDF and Theil sum.
+    Minimize L2-norm under position and constrainted CDF (relative income) and Theil sum.
     """
 
     def construct(self):
@@ -327,4 +330,30 @@ class Model4(Model):
         m.theil_sum = mo.Constraint(rule=theil_sum_rule, doc='')
         # Objective
         m.obj = mo.Objective(rule=threshold_obj, sense=mo.minimize)
+        return self
+
+
+class Model4b(Model):
+    """
+    Minimize population difference below threshold under position and constrained Theil sum.
+    """
+
+    def construct(self):
+        self.model = m = mo.ConcreteModel()
+        # Model Data
+        m.data = self.model_data
+        # Sets
+        m.idxs = mo.Set(initialize=m.data['idxs'])
+        # Variables
+        m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
+                     bounds=(0, ineq.MAX_THEIL))
+        # Constraints
+        m.position = mo.Constraint(m.idxs, rule=position_rule,
+                                   doc='ordering between provinces must be maintained')
+        m.theil_sum = mo.Constraint(rule=theil_sum_rule, doc='')
+        # Objective
+        factors = [10 * 365, m.data['I']]
+        weights = [2, 1]
+        rule = lambda m: threshold_obj(m, factors=factors, weights=weights)
+        m.obj = mo.Objective(rule=rule, sense=mo.minimize)
         return self
