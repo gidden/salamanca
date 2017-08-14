@@ -114,9 +114,7 @@ def test_Model2_solution():
     model.solve()
 
     # ginis in original order
-    df = model.result()
-    assert sorted(df.columns) == ['gini', 'i', 'n']
-    obs = df['gini'].values
+    obs = model.result()['gini'].values
     exp = [0.45663392, 0.19798731]
     assert_array_almost_equal(obs, exp)
 
@@ -128,10 +126,8 @@ def test_Model3_solution():
     model.solve()
 
     # ginis in original order
-    df = model.result()
-    assert sorted(df.columns) == ['gini', 'i', 'n']
-    obs = df['gini'].values
-    exp = [0.40395224, 0.3026189]
+    obs = model.result()['gini'].values
+    exp = [0.45209117, 0.21030433]
     assert_array_almost_equal(obs, exp)
 
 
@@ -142,8 +138,6 @@ def test_Model4_solution():
     model.solve()
 
     # ginis in original order
-    df = model.result()
-    assert sorted(df.columns) == ['gini', 'i', 'n']
-    obs = df['gini'].values
+    obs = model.result()['gini'].values
     exp = [0.41473959, 0.28608873]
     assert_array_almost_equal(obs, exp)

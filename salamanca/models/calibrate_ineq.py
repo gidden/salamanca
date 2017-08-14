@@ -61,7 +61,7 @@ def position_rule(m, idx):
     """
     if idx == 0:
         return mo.Constraint.Skip
-    return m.t[idx - 1] <= m.t[idx]
+    return m.t[idx] >= m.t[idx - 1]
 
 
 def diff_hi_rule(m, idx, b=0.8):
@@ -247,7 +247,7 @@ class Model1(Model):
 
 class Model2(Model):
     """
-    Minimize L2-norm under constrainted CDF and Theil sum.
+    Minimize L2-norm under position and constrainted CDF and Theil sum.
     """
 
     def construct(self):
@@ -260,6 +260,8 @@ class Model2(Model):
         m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
                      bounds=(0, ineq.MAX_THEIL))
         # Constraints
+        m.position = mo.Constraint(m.idxs, rule=position_rule,
+                                   doc='ordering between provinces must be maintained')
         m.thresh_hi = mo.Constraint(m.idxs, rule=threshold_hi_rule,
                                     doc='')
         m.thresh_lo = mo.Constraint(m.idxs, rule=threshold_lo_rule,
@@ -272,7 +274,9 @@ class Model2(Model):
 
 class Model3(Model):
     """
-    Minimize Theil sum under constrainted CDF.
+    Minimize Theil sum under position and constrainted CDF.
+
+    This is subject to having multiple optima within the constrained threshold space.
     """
 
     def construct(self):
@@ -285,6 +289,8 @@ class Model3(Model):
         m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
                      bounds=(0, ineq.MAX_THEIL))
         # Constraints
+        m.position = mo.Constraint(m.idxs, rule=position_rule,
+                                   doc='ordering between subgroups must be maintained')
         m.thresh_hi = mo.Constraint(m.idxs, rule=threshold_hi_rule,
                                     doc='')
         m.thresh_lo = mo.Constraint(m.idxs, rule=threshold_lo_rule,
@@ -296,7 +302,7 @@ class Model3(Model):
 
 class Model4(Model):
     """
-    Minimize population difference below threshold under constrained Theil sum.
+    Minimize population difference below threshold under position and constrained Theil sum.
     """
 
     def construct(self):
@@ -309,6 +315,8 @@ class Model4(Model):
         m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
                      bounds=(0, ineq.MAX_THEIL))
         # Constraints
+        m.position = mo.Constraint(m.idxs, rule=position_rule,
+                                   doc='ordering between provinces must be maintained')
         m.theil_sum = mo.Constraint(rule=theil_sum_rule, doc='')
         # Objective
         m.obj = mo.Objective(rule=threshold_obj, sense=mo.minimize)
