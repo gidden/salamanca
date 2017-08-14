@@ -121,8 +121,8 @@ def threshold_obj(m):
     x = lambda m, idx, f: below_threshold(f * i[idx], i[idx], m.data['t'][idx])
     y = lambda m, idx, f: below_threshold(f * i[idx], i[idx], m.t[idx])
 
-    #factors = [0.5, 1.0, 1.5]
-    #weights = [1.0, 0.9, 0.8]
+    # factors = [0.5, 1.0, 1.5]
+    # weights = [1.0, 0.9, 0.8]
     factors = [1.0]
     weights = [1.0]
     n = m.data['n']
@@ -143,8 +143,13 @@ class Model(object):
         self._check_model_data()
 
     def _setup_model_data(self, natdata, subdata):
-        n, i, gini = 'n', 'i', 'gini'
+        required = (n, i, gini) = 'n', 'i', 'gini'
         ndf, sdf = self.natdata, self.subdata
+        msg = 'Must include all of {} in {} data'
+        if any(x not in ndf for x in required):
+            raise ValueError(msg.format(required, 'national'))
+        if any(x not in sdf for x in required):
+            raise ValueError(msg.format(required, 'subnational'))
 
         # correct income by scaling
         sdf[n] *= ndf[n] / sdf[n].sum()

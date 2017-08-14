@@ -1,3 +1,5 @@
+import pytest
+
 import numpy as np
 import pandas as pd
 
@@ -77,6 +79,17 @@ def test_model_data_idx():
     obs = model.model_idx.values
     exp = np.array([0, 1])
     assert (obs == exp).all()
+
+
+def test_model_data_error():
+    natdata, subdata = data()
+    ndf = natdata.copy().drop('n')
+    with pytest.raises(ValueError):
+        model = Model(ndf, subdata)
+
+    sdf = natdata.copy().drop('n')
+    with pytest.raises(ValueError):
+        model = Model(natdata, sdf)
 
 
 def test_Model1_solution():
