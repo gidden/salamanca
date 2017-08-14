@@ -7,6 +7,10 @@ import pyomo.environ as mo
 
 from salamanca import ineq
 
+#
+# Constraints
+#
+
 
 def position_rule(m, idx):
     r"""|pos|
@@ -18,25 +22,48 @@ def position_rule(m, idx):
     return m.t[idx - 1] <= m.t[idx]
 
 
-def diff_hi_rule(m, idx):
+def diff_hi_rule(m, idx, b=0.8):
     r"""|diff_hi|
 
     .. |diff_hi| replace:: :math:`t_r - t_{r-1} \geq 0.8 (t^*_r - t^*_{r-1}) \forall r \in {r_2 \ldots r_N}`
     """
     if idx == 0:
         return mo.Constraint.Skip
-    return m.t[idx] - m.t[idx - 1] >= 0.8 * (m.data['t'][idx] - m.data['t'][idx - 1])
+    return m.t[idx] - m.t[idx - 1] >= b * (m.data['t'][idx] - m.data['t'][idx - 1])
 
 
-def diff_lo_rule(m, idx):
+def diff_lo_rule(m, idx, b=1.2):
     if idx == 0:
         return mo.Constraint.Skip
-    return m.t[idx] - m.t[idx - 1] <= 1.2 * (m.data['t'][idx] - m.data['t'][idx - 1])
+    return m.t[idx] - m.t[idx - 1] <= b * (m.data['t'][idx] - m.data['t'][idx - 1])
 
 
 def theil_sum_rule(m):
     return sum(m.t[idx] * m.data['g'][idx] for idx in m.idxs) == \
         m.data['T_w'] * m.data['G']
+
+
+def threshold_lo_rule(m, idx, f=0.5, b=0.9):
+    dist = ineq.LogNormal()
+    emp = m.data['empirical']
+    i = m.data['i'][idx]
+    rhs = dist.below_threshold(f * i, theil=m.data['t'][idx], empirical=emp)
+    lhs = dist.below_threshold(f * i, theil=m.t[idx], empirical=emp, opt=True)
+    return lhs >= b * rhs
+
+
+def threshold_hi_rule(m, idx, f=0.5, b=1.1):
+    dist = ineq.LogNormal(pyomo=True, mean=False)
+    emp = m.data['empirical']
+    i = m.data['i'][idx]
+    rhs = dist.below_threshold(f * i, theil=m.data['t'][idx], empirical=emp)
+    print(f, i, m.t[idx], emp, m.data['t'][idx], rhs)
+    lhs = dist.below_threshold(f * i, theil=m.t[idx], empirical=emp, opt=True)
+    return lhs <= b * rhs
+
+#
+# Objectives
+#
 
 
 def min_diff_obj(m):
@@ -81,11 +108,14 @@ class Model(object):
         self.model_data = {
             'idxs': self.model_idx.values,
             'n': sdf[n].values,
-            't': ineq.gini_to_theil(sdf[gini].values, empirical=self.empirical),
+            'i': sdf[i].values,
             'g': (sdf[n] * sdf[i]).values,
+            't': ineq.gini_to_theil(sdf[gini].values, empirical=self.empirical),
+            'N': ndf[n],
+            'I': ndf[i],
             'G': ndf[n] * ndf[i],
-            'N': natdata[n],
             'T_w': T_w,
+            'empirical': self.empirical,
         }
 
     def _check_model_data(self):
@@ -148,5 +178,32 @@ class Model1(Model):
         m.diff_lo = mo.Constraint(m.idxs, rule=diff_lo_rule,
                                   doc='difference between values should be about the same')
         m.theil_sum = mo.Constraint(rule=theil_sum_rule, doc='factor ordering')
+        m.obj = mo.Objective(rule=min_diff_obj, sense=mo.minimize)
+        return self
+
+
+class Model2(Model):
+    """
+    Comprised of
+
+    | |pos|
+    | |diff_hi|
+
+    """
+
+    def construct(self):
+        self.model = m = mo.ConcreteModel()
+        # Model Data
+        m.data = self.model_data
+        # Sets
+        m.idxs = mo.Set(initialize=m.data['idxs'])
+        # Variables
+        m.t = mo.Var(m.idxs)
+        # Constraints
+        m.thresh_hi = mo.Constraint(m.idxs, rule=threshold_hi_rule,
+                                    doc='')
+        m.thresh_lo = mo.Constraint(m.idxs, rule=threshold_lo_rule,
+                                    doc='')
+        m.theil_sum = mo.Constraint(rule=theil_sum_rule, doc='')
         m.obj = mo.Objective(rule=min_diff_obj, sense=mo.minimize)
         return self

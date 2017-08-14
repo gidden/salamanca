@@ -1,4 +1,7 @@
+import math
+
 import numpy as np
+import pyomo.environ as mo
 
 from scipy.stats import norm, lognorm
 from scipy.special import erf, erfinv
@@ -166,7 +169,9 @@ class LogNormal(object):
         shape = gini_to_std(data.gini) if data.theil is None \
             else theil_to_std(data.theil)
         # scale assumes a median value, adjust is made if income is mean income
-        scale = np.exp(np.log(data.inc) - shape ** 2 / 2) if data.mean \
+        opt = kwargs.pop('opt', False)
+        _np = mo if opt else np
+        scale = _np.exp(_np.log(data.inc) - (shape * shape) / 2) if data.mean \
             else data.inc
         return shape, scale
 
@@ -183,6 +188,7 @@ class LogNormal(object):
     def cdf(self, x, **kwargs):
         """See ScipyLogNorm_"""
         shape, scale = self.params(**kwargs)
+        print(x, shape, scale)
         return lognorm.cdf(x, shape, scale=scale)
 
     def below_threshold(self, threshold, **kwargs):
@@ -194,8 +200,14 @@ class LogNormal(object):
         threshold : numeric
             income threshold
         """
-        shape, scale = self.params(**kwargs)
-        return lognorm.cdf(threshold, shape, scale=scale)
+        opt = kwargs.pop('opt', False)
+        if opt:
+            k = math.pi ** 0.5 * math.log(2)
+            shape, scale = self.params(opt=True, **kwargs)
+            x = (mo.log(threshold) - mo.log(scale)) / (2 ** 0.5 * shape)
+            return 0.5 + 0.5 * mo.tanh(k * x)
+        else:
+            return self.cdf(threshold, **kwargs)
 
     def lorenz(self, x, **kwargs):
         r"""The Lorenz curve for log-normal distributions is defined as:

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from salamanca import ineq
-from salamanca.models.calibrate_ineq import Model, Model1
+from salamanca.models.calibrate_ineq import Model, Model1, Model2
 
 from utils import assert_almost_equal, assert_array_almost_equal
 
@@ -103,3 +103,16 @@ def test_Model1_result():
     obs = df['gini'].values
     exp = ineq.theil_to_gini(model.solution, empirical=False)
     assert_array_almost_equal(obs, exp[::-1])  # back to the right order
+
+
+def test_Model2_solution():
+    natdata, subdata = data()
+    model = Model2(natdata, subdata)
+    model.construct()
+    model.solve()
+
+    # this is the theil result
+    obs = model.solution
+    exp = np.array([0.062872, 0.369337])  # solution is ordered small to large
+    assert_array_almost_equal(obs, exp)
+    theil_exp = exp
