@@ -111,9 +111,9 @@ def l2_norm_obj(m):
 
 
 def theil_sum_obj(m):
-    lhs = sum(m.t[idx] * m.data['g'][idx] for idx in m.idxs)
-    rhs = m.data['T_w'] * m.data['G']
-    return (lhs - rhs) ** 2
+    _t_w = lambda m, idx: m.data['i'][idx] * \
+        m.data['n'][idx] / m.data['G'] * m.t[idx]
+    return (m.data['T_w'] - sum(_t_w(m, idx) for idx in m.idxs)) ** 2
 
 
 def threshold_obj(m, factors=[1.0], weights=[1.0]):
