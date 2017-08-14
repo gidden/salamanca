@@ -1,5 +1,6 @@
 from __future__ import division
 
+import itertools
 import math
 
 import numpy as np
@@ -116,16 +117,18 @@ def theil_sum_obj(m):
 
 
 def threshold_obj(m):
-    f = 1.0
     i = m.data['i']
+    x = lambda m, idx, f: below_threshold(f * i[idx], i[idx], m.data['t'][idx])
+    y = lambda m, idx, f: below_threshold(f * i[idx], i[idx], m.t[idx])
+
+    #factors = [0.5, 1.0, 1.5]
+    #weights = [1.0, 0.9, 0.8]
+    factors = [1.0]
+    weights = [1.0]
     n = m.data['n']
-
-    x = lambda m, idx: below_threshold(f * i[idx], i[idx], m.data['t'][idx])
-    y = lambda m, idx: below_threshold(f * i[idx], i[idx], m.t[idx])
-
     return sum(
-        (n[idx] * (x(m, idx) - y(m, idx))) ** 2
-        for idx in m.idxs)
+        (w * n[idx] * (x(m, idx, f) - y(m, idx, f))) ** 2
+        for (f, w), idx in itertools.product(zip(factors, weights), m.idxs))
 
 
 class Model(object):
