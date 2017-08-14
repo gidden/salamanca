@@ -1,11 +1,52 @@
 from __future__ import division
 
+import math
+
 import numpy as np
 import pandas as pd
 import pyomo.environ as mo
 
 
 from salamanca import ineq
+
+#
+# Pyomo-enabled helper functions
+#
+
+
+def below_threshold(x, i, t, median=True):
+    """Compute the CDF of the lognormal distribution at x using an approximation of
+    the error function:
+
+    .. math::
+
+        erf(x) \approx \tanh(\sqrt \pi \log x)
+
+    Parameters
+    ----------
+    x : numeric
+       threshold income
+    i : numeric
+       mean income (per capita)
+    t : numeric or Pyomo variable
+       theil coefficient
+    median : bool
+       treat income as median income
+    """
+    # see
+    # https://math.stackexchange.com/questions/321569/approximating-the-error-function-erf-by-analytical-functions
+    sigma2 = 2 * t  # t is var
+    # f(var), adjust for mean income vs. median
+    mu = math.log(i)
+    if median:
+        mu -= sigma2 / 2
+    # f(var), argument for error function
+    arg = (math.log(x) - mu) / mo.sqrt(2 * sigma2)
+    # coefficient for erf approximation
+    k = math.pi ** 0.5 * math.log(2)
+    # definition of cdf with tanh(kx) approximating erf(x)
+    return 0.5 + 0.5 * mo.tanh(k * arg)
+
 
 #
 # Constraints
@@ -43,22 +84,19 @@ def theil_sum_rule(m):
         m.data['T_w'] * m.data['G']
 
 
-def threshold_lo_rule(m, idx, f=0.5, b=0.9):
-    dist = ineq.LogNormal()
-    emp = m.data['empirical']
+def threshold_lo_rule(m, idx, f=1.0, b=0.9):
     i = m.data['i'][idx]
-    rhs = dist.below_threshold(f * i, theil=m.data['t'][idx], empirical=emp)
-    lhs = dist.below_threshold(f * i, theil=m.t[idx], empirical=emp, opt=True)
+    x = f * i
+    rhs = below_threshold(x, i, m.data['t'][idx])
+    lhs = below_threshold(x, i, m.t[idx])
     return lhs >= b * rhs
 
 
-def threshold_hi_rule(m, idx, f=0.5, b=1.1):
-    dist = ineq.LogNormal(pyomo=True, mean=False)
-    emp = m.data['empirical']
+def threshold_hi_rule(m, idx, f=1.0, b=1.1):
     i = m.data['i'][idx]
-    rhs = dist.below_threshold(f * i, theil=m.data['t'][idx], empirical=emp)
-    print(f, i, m.t[idx], emp, m.data['t'][idx], rhs)
-    lhs = dist.below_threshold(f * i, theil=m.t[idx], empirical=emp, opt=True)
+    x = f * i
+    rhs = below_threshold(x, i, m.data['t'][idx])
+    lhs = below_threshold(x, i, m.t[idx])
     return lhs <= b * rhs
 
 #
@@ -66,9 +104,28 @@ def threshold_hi_rule(m, idx, f=0.5, b=1.1):
 #
 
 
-def min_diff_obj(m):
+def l2_norm_obj(m):
     return sum((m.t[idx] - m.data['t'][idx]) ** 2
                for idx in m.idxs)
+
+
+def theil_sum_obj(m):
+    lhs = sum(m.t[idx] * m.data['g'][idx] for idx in m.idxs)
+    rhs = m.data['T_w'] * m.data['G']
+    return (lhs - rhs) ** 2
+
+
+def threshold_obj(m):
+    f = 1.0
+    i = m.data['i']
+    n = m.data['n']
+
+    x = lambda m, idx: below_threshold(f * i[idx], i[idx], m.data['t'][idx])
+    y = lambda m, idx: below_threshold(f * i[idx], i[idx], m.t[idx])
+
+    return sum(
+        (n[idx] * (x(m, idx) - y(m, idx))) ** 2
+        for idx in m.idxs)
 
 
 class Model(object):
@@ -115,7 +172,6 @@ class Model(object):
             'I': ndf[i],
             'G': ndf[n] * ndf[i],
             'T_w': T_w,
-            'empirical': self.empirical,
         }
 
     def _check_model_data(self):
@@ -155,6 +211,8 @@ class Model(object):
 
 class Model1(Model):
     """
+    Minimize L2-norm under position and constrainted relative difference and Theil sum.
+
     Comprised of
 
     | |pos|
@@ -169,7 +227,8 @@ class Model1(Model):
         # Sets
         m.idxs = mo.Set(initialize=m.data['idxs'])
         # Variables
-        m.t = mo.Var(m.idxs)
+        m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
+                     bounds=(0, ineq.MAX_THEIL))
         # Constraints
         m.position = mo.Constraint(m.idxs, rule=position_rule,
                                    doc='ordering between provinces must be maintained')
@@ -178,17 +237,14 @@ class Model1(Model):
         m.diff_lo = mo.Constraint(m.idxs, rule=diff_lo_rule,
                                   doc='difference between values should be about the same')
         m.theil_sum = mo.Constraint(rule=theil_sum_rule, doc='factor ordering')
-        m.obj = mo.Objective(rule=min_diff_obj, sense=mo.minimize)
+        # Objective
+        m.obj = mo.Objective(rule=l2_norm_obj, sense=mo.minimize)
         return self
 
 
 class Model2(Model):
     """
-    Comprised of
-
-    | |pos|
-    | |diff_hi|
-
+    Minimize L2-norm under constrainted CDF and Theil sum.
     """
 
     def construct(self):
@@ -198,12 +254,59 @@ class Model2(Model):
         # Sets
         m.idxs = mo.Set(initialize=m.data['idxs'])
         # Variables
-        m.t = mo.Var(m.idxs)
+        m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
+                     bounds=(0, ineq.MAX_THEIL))
         # Constraints
         m.thresh_hi = mo.Constraint(m.idxs, rule=threshold_hi_rule,
                                     doc='')
         m.thresh_lo = mo.Constraint(m.idxs, rule=threshold_lo_rule,
                                     doc='')
         m.theil_sum = mo.Constraint(rule=theil_sum_rule, doc='')
-        m.obj = mo.Objective(rule=min_diff_obj, sense=mo.minimize)
+        # Objective
+        m.obj = mo.Objective(rule=l2_norm_obj, sense=mo.minimize)
+        return self
+
+
+class Model3(Model):
+    """
+    Minimize Theil sum under constrainted CDF.
+    """
+
+    def construct(self):
+        self.model = m = mo.ConcreteModel()
+        # Model Data
+        m.data = self.model_data
+        # Sets
+        m.idxs = mo.Set(initialize=m.data['idxs'])
+        # Variables
+        m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
+                     bounds=(0, ineq.MAX_THEIL))
+        # Constraints
+        m.thresh_hi = mo.Constraint(m.idxs, rule=threshold_hi_rule,
+                                    doc='')
+        m.thresh_lo = mo.Constraint(m.idxs, rule=threshold_lo_rule,
+                                    doc='')
+        # Objective
+        m.obj = mo.Objective(rule=theil_sum_obj, sense=mo.minimize)
+        return self
+
+
+class Model4(Model):
+    """
+    Minimize population difference below threshold under constrained Theil sum.
+    """
+
+    def construct(self):
+        self.model = m = mo.ConcreteModel()
+        # Model Data
+        m.data = self.model_data
+        # Sets
+        m.idxs = mo.Set(initialize=m.data['idxs'])
+        # Variables
+        m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
+                     bounds=(0, ineq.MAX_THEIL))
+        # Constraints
+        m.theil_sum = mo.Constraint(rule=theil_sum_rule, doc='')
+        # Objective
+        m.obj = mo.Objective(rule=threshold_obj, sense=mo.minimize)
         return self

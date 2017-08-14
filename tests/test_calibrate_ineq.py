@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from salamanca import ineq
-from salamanca.models.calibrate_ineq import Model, Model1, Model2
+from salamanca.models.calibrate_ineq import Model, Model1, Model2, Model3, Model4
 
 from utils import assert_almost_equal, assert_array_almost_equal
 
@@ -86,8 +86,10 @@ def test_Model1_solution():
     model.solve()
 
     # this is the theil result
+    # equivalent ginis are: 0.19798731, 0.45663392
     obs = model.solution
-    exp = np.array([0.062872, 0.369337])  # solution is ordered small to large
+    # solution is ordered small to large
+    exp = np.array([0.062872, 0.369337])
     assert_array_almost_equal(obs, exp)
     theil_exp = exp
 
@@ -111,8 +113,37 @@ def test_Model2_solution():
     model.construct()
     model.solve()
 
-    # this is the theil result
-    obs = model.solution
-    exp = np.array([0.062872, 0.369337])  # solution is ordered small to large
+    # ginis in original order
+    df = model.result()
+    assert sorted(df.columns) == ['gini', 'i', 'n']
+    obs = df['gini'].values
+    exp = [0.45663392, 0.19798731]
     assert_array_almost_equal(obs, exp)
-    theil_exp = exp
+
+
+def test_Model3_solution():
+    natdata, subdata = data()
+    model = Model3(natdata, subdata)
+    model.construct()
+    model.solve()
+
+    # ginis in original order
+    df = model.result()
+    assert sorted(df.columns) == ['gini', 'i', 'n']
+    obs = df['gini'].values
+    exp = [0.40395224, 0.3026189]
+    assert_array_almost_equal(obs, exp)
+
+
+def test_Model4_solution():
+    natdata, subdata = data()
+    model = Model4(natdata, subdata)
+    model.construct()
+    model.solve()
+
+    # ginis in original order
+    df = model.result()
+    assert sorted(df.columns) == ['gini', 'i', 'n']
+    obs = df['gini'].values
+    exp = [0.41473959, 0.28608873]
+    assert_array_almost_equal(obs, exp)
