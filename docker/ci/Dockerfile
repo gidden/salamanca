@@ -1,4 +1,4 @@
-FROM gidden/python-base
+FROM gidden/python-opt
 
 COPY . /salamanca
 
