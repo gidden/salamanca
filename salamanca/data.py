@@ -16,7 +16,7 @@ from salamanca.utils import backend
 
 WB_INDICATORS = {
     'SP.POP.TOTL': 'total_population',
-    'PA.NUS.PPPC.RF': 'ppp_to_mer',
+    'PA.NUS.PPPC.RF': 'ppp_to_mer',  # conversion factor [PPP / MER]
     'FP.CPI.TOTL': 'cpi',
     'PA.NUS.FCRF': 'exchange_rate',
     'NY.GDP.DEFL.ZS': 'gdp_deflator',

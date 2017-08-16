@@ -48,6 +48,12 @@ class Translator(object):
             x = self.inflation('USA', fromyr, toyr, method=method)
         return x
 
+    def ppp_to_mer(self, iso, yr):
+        return self._ppp_to_mer.loc[iso][yr]
+
+    def mer_to_ppp(self, iso, yr):
+        return 1.0 / self._ppp_to_mer.loc[iso][yr]
+
     def exchange(self, x, iso=None, yr=None, units='MER',
                  fromiso=None, fromyr=None,
                  toiso=None, toyr=None,

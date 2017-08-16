@@ -76,10 +76,65 @@ def exchange(**kwargs):
     print(ret)
     return ret
 
+
 COMMANDS['exchange'] = (
     """Exchange currency from one country/year to another.""",
     exchange_cli,
     exchange,
+)
+
+
+def to_ppp_cli(parser):
+    amt = 'quantity of currency in MER (default: 1.0)'
+    parser.add_argument('-x', '--amt', help=amt, type=float, default=1.0)
+    iso = '3-letter ISO code for the country'
+    parser.add_argument('--iso', help=iso)
+    year = 'year of conversion'
+    parser.add_argument('--year', type=int, help=year)
+
+
+def to_ppp(**kwargs):
+    amt = kwargs['amt']
+    iso = kwargs['iso']
+    year = kwargs['year']
+
+    xlator = currency.Translator()
+    ret = amt * xlator.mer_to_ppp(iso, year)
+    print(ret)
+    return ret
+
+
+COMMANDS['to_ppp'] = (
+    """Exchange currency in MER to PPP.""",
+    to_ppp_cli,
+    to_ppp,
+)
+
+
+def to_mer_cli(parser):
+    amt = 'quantity of currency in PPP (default: 1.0)'
+    parser.add_argument('-x', '--amt', help=amt, type=float, default=1.0)
+    iso = '3-letter ISO code for the country'
+    parser.add_argument('--iso', help=iso)
+    year = 'year of conversion'
+    parser.add_argument('--year', type=int, help=year)
+
+
+def to_mer(**kwargs):
+    amt = kwargs['amt']
+    iso = kwargs['iso']
+    year = int(kwargs['year'])
+
+    xlator = currency.Translator()
+    ret = amt / xlator.mer_to_ppp(iso, year)
+    print(ret)
+    return ret
+
+
+COMMANDS['to_mer'] = (
+    """Exchange currency in PPP to MER.""",
+    to_mer_cli,
+    to_mer,
 )
 
 
