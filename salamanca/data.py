@@ -217,3 +217,7 @@ class WorldBank(object):
     def ppp_to_mer(self, **kwargs):
         df = self.query('ppp_to_mer', **kwargs)
         return df
+
+    def household_fraction_gdp(self, **kwargs):
+        df = self.query('household_fraction_gdp', **kwargs)
+        return df
