@@ -157,6 +157,9 @@ class WorldBank(object):
             df['date'] = df['date'].astype(int)
         except:
             pass
+        # remove NaN countries
+        # TODO: why are there NaNs?
+        df = df.dropna(subset=['country'])
 
         # write to disc if we're caching
         if use_cache and (not exists or overwrite):
