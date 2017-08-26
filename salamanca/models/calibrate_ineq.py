@@ -15,7 +15,7 @@ from salamanca import ineq
 #
 
 
-def below_threshold(x, i, t, median=True):
+def below_threshold(x, i, t, mean=True):
     """Compute the CDF of the lognormal distribution at x using an approximation of
     the error function:
 
@@ -31,15 +31,15 @@ def below_threshold(x, i, t, median=True):
        mean income (per capita)
     t : numeric or Pyomo variable
        theil coefficient
-    median : bool
-       treat income as median income
+    mean : bool, default: True
+       treat income as mean income
     """
     # see
     # https://math.stackexchange.com/questions/321569/approximating-the-error-function-erf-by-analytical-functions
     sigma2 = 2 * t  # t is var
     # f(var), adjust for mean income vs. median
     mu = math.log(i)
-    if median:
+    if mean:
         mu -= sigma2 / 2
     # f(var), argument for error function
     arg = (math.log(x) - mu) / mo.sqrt(2 * sigma2)
