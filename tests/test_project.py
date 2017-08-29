@@ -54,15 +54,15 @@ def test_model_data_pop():
     assert_array_almost_equal(obs, exp)
 
 
-# def test_model_data_error():
-#     natdata, subdata = data()
-#     ndf = natdata.copy().drop('n')
-#     with pytest.raises(ValueError):
-#         model = Model(ndf, subdata)
+def test_model_data_error():
+    natdata, subdata = data()
+    ndf = natdata.copy().drop('n', axis=1)
+    with pytest.raises(ValueError):
+        model = Model(ndf, subdata)
 
-#     sdf = natdata.copy().drop('n')
-#     with pytest.raises(ValueError):
-#         model = Model(natdata, sdf)
+    sdf = natdata.copy().drop('n', axis=1)
+    with pytest.raises(ValueError):
+        model = Model(natdata, sdf)
 
 
 # def test_Model1_full():
