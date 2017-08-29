@@ -41,18 +41,18 @@ def threshold_hi_rule(m, f=1.0, b=1.05, relative=True):
     return lhs <= b * rhs
 
 
-def theil_diff_hi_rule(m, idx, b=0.8):
+def theil_diff_hi_rule(m, idx, b=0.9):
     """
-    \frac{t^{t+1} - t^t}{t^{t}} \geq -0.2
+    \frac{t^{t+1} - t^t}{t^{t}} \geq -0.1
 
     @TODO: is 10% in 10 years (or other timeperiod) reasonable?
     """
     return m.t[idx] >= b * m.data['t'][idx]
 
 
-def theil_diff_lo_rule(m, idx, b=1.2):
+def theil_diff_lo_rule(m, idx, b=1.1):
     """
-    \frac{t^{t+1} - t^t}{t^{t}} \leq 0.2
+    \frac{t^{t+1} - t^t}{t^{t}} \leq 0.1
 
     @TODO: is 10% in 10 years (or other timeperiod) reasonable?
     """
@@ -65,7 +65,7 @@ def income_diff_hi_rule(m, idx, b=0.8):
 
     s^t = \frac{i^t}{I^t}
 
-    @TODO: is 10% in 10 years (or other timeperiod) reasonable?
+    @TODO: is 20% in 10 years (or other timeperiod) reasonable?
     """
     return m.i[idx] / m.data['I'] >= b * m.data['i'][idx] / m.data['I_old']
 
@@ -76,7 +76,7 @@ def income_diff_lo_rule(m, idx, b=1.2):
 
     s^t = \frac{i^t}{I^t}
 
-    @TODO: is 10% in 10 years (or other timeperiod) reasonable?
+    @TODO: is 20% in 10 years (or other timeperiod) reasonable?
     """
     return m.i[idx] / m.data['I'] <= b * m.data['i'][idx] / m.data['I_old']
 

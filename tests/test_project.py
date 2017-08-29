@@ -14,7 +14,7 @@ from utils import assert_almost_equal, assert_array_almost_equal
 def data():
     natdata = pd.DataFrame({
         'n': [20, 25],
-        'i': [105, 110],
+        'i': [135 / 20., 175 / 25.],
         'gini': [0.4, 0.35],
     }, index=pd.Index([2010, 2020], name='year'))
     subdata = pd.DataFrame({
@@ -76,8 +76,8 @@ def test_Model1_solution():
     # this is a regression test, results tested 08-29-17
     obs = model.solution
     exp = pd.DataFrame({
-        'i': np.array([111.43557203, 109.192490733]),
-        't': np.array([0.252259948666, 0.179211800942]),
+        'i': np.array([7.007136, 6.995986]),
+        't': np.array([0.241891, 0.185623]),
     }, index=pd.Index(['foo', 'bar'], name='name'))
     assert_frame_equal(obs, exp)
 
@@ -102,11 +102,11 @@ def test_Model1_result():
     exp = subdata.loc[2020]['n']
     assert_array_almost_equal(obs, exp)
 
-    # test result
+    # this is a regression test, results tested 08-29-17
     obs = df[['gini', 'i']]
     exp = pd.DataFrame({
-        'i': np.array([111.43557203, 109.192490733]),
-        'gini': ineq.theil_to_gini(np.array([0.252259948666, 0.179211800942]),
+        'i': np.array([7.007136, 6.995986]),
+        'gini': ineq.theil_to_gini(np.array([0.241891, 0.185623]),
                                    empirical=False)
     }, index=pd.Index(['foo', 'bar'], name='name'))
     assert_frame_equal(obs, exp)
@@ -119,10 +119,10 @@ def test_Model1_diffusion_result():
     model.solve()
     df = model.result()
 
-    # test result
+    # this is a regression test, results tested 08-29-17
     obs = df[['gini', 'i']]
     exp = pd.DataFrame({
-        'i': np.array([111.43557203, 109.192490733]),
-        'gini': np.array([0.477747531591, 0.365570088772]),
+        'i': np.array([8.38271666486, 6.22222187602]),
+        'gini': np.array([0.477747557316, 0.285296967258]),
     }, index=pd.Index(['foo', 'bar'], name='name'))
     assert_frame_equal(obs, exp)
