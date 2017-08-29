@@ -61,9 +61,9 @@ def theil_diff_lo_rule(m, idx, b=1.1):
 
 def income_diff_hi_rule(m, idx, b=0.8):
     """
-    \frac{s^{t+1} - s^t}{s^{t}} \geq -0.2
+    \frac{\iota^{t+1} - \iota^t}{\iota^{t}} \geq -0.2
 
-    s^t = \frac{i^t}{I^t}
+    \iota^t = \frac{i^t}{I^t}
 
     @TODO: is 20% in 10 years (or other timeperiod) reasonable?
     """
@@ -72,13 +72,41 @@ def income_diff_hi_rule(m, idx, b=0.8):
 
 def income_diff_lo_rule(m, idx, b=1.2):
     """
-    \frac{s^{t+1} - s^t}{s^{t}} \leq 0.2
+    \frac{\iota^{t+1} - \iota^t}{\iota^{t}} \leq 0.2
 
-    s^t = \frac{i^t}{I^t}
+    \iota^t = \frac{i^t}{I^t}
 
     @TODO: is 20% in 10 years (or other timeperiod) reasonable?
     """
     return m.i[idx] / m.data['I'] <= b * m.data['i'][idx] / m.data['I_old']
+
+
+def share_diff_hi_rule(m, idx, b=0.8):
+    """
+    \frac{s^{t+1} - s^t}{s^{t}} \geq -0.2
+
+    s^t = \frac{i^t n^t}{I^t N^t}
+
+    @TODO: is 20% in 10 years (or other timeperiod) reasonable?
+    """
+    lhs = (m.i[idx] * m.data['n'][idx]) / (m.data['I'] * m.data['N'])
+    rhs = (m.data['i'][idx] * m.data['n_old'][idx]) / \
+        (m.data['I_old'] * m.data['N_old'])
+    return lhs >= b * rhs
+
+
+def share_diff_lo_rule(m, idx, b=1.2):
+    """
+    \frac{s^{t+1} - s^t}{s^{t}} \leq 0.2
+
+    s^t = \frac{i^t n^t}{I^t N^t}
+
+    @TODO: is 20% in 10 years (or other timeperiod) reasonable?
+    """
+    lhs = (m.i[idx] * m.data['n'][idx]) / (m.data['I'] * m.data['N'])
+    rhs = (m.data['i'][idx] * m.data['n_old'][idx]) / \
+        (m.data['I_old'] * m.data['N_old'])
+    return lhs <= b * rhs
 
 
 #
@@ -135,6 +163,7 @@ class Model(object):
         gini_max = max(0.8, np.max(ginis))
         self.model_data = {
             'idxs': self.model_idx,
+            'n_old': sdf.loc[histidx][n].values,
             'n': sdf.loc[modelidx][n].values,
             'i': sdf.loc[histidx][i].values,
             't': ineq.gini_to_theil(ginis,
@@ -144,6 +173,7 @@ class Model(object):
             't_max': ineq.gini_to_theil(gini_max,
                                         empirical=self.empirical),
             'N': ndf.loc[modelidx][n],
+            'N_old': ndf.loc[histidx][n],
             'I': ndf.loc[modelidx][i],
             'I_old': ndf.loc[histidx][i],
             'G': ndf.loc[modelidx][n] * ndf.loc[modelidx][i],
@@ -186,10 +216,15 @@ class Model(object):
 
 class Model1(Model):
     """
-    Minimize L2 norm of Theil difference under
+    Minimize L2 norm of Theil difference under:
 
     - GDP sum
     - constrained CDF
+
+    with optionally (assuming 10 year time steps):
+
+    - maximum theil diffusion of 1% per year
+    - maximum income share diffusion of 2% per year    
     """
 
     def construct(self, with_diffusion=False):
@@ -214,10 +249,10 @@ class Model1(Model):
                                    doc='theil within 10% from past')
             m.t_lo = mo.Constraint(m.idxs, rule=theil_diff_lo_rule,
                                    doc='theil within 10% from past')
-            m.i_hi = mo.Constraint(m.idxs, rule=income_diff_hi_rule,
-                                   doc='income share within 10% from past')
-            m.i_lo = mo.Constraint(m.idxs, rule=income_diff_lo_rule,
-                                   doc='income share within 10% from past')
+            m.i_hi = mo.Constraint(m.idxs, rule=share_diff_hi_rule,
+                                   doc='income share within 20% from past')
+            m.i_lo = mo.Constraint(m.idxs, rule=share_diff_lo_rule,
+                                   doc='income share within 20% from past')
         # Objective
         m.obj = mo.Objective(rule=theil_total_sum_obj, sense=mo.minimize)
         return self

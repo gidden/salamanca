@@ -122,7 +122,7 @@ def test_Model1_diffusion_result():
     # this is a regression test, results tested 08-29-17
     obs = df[['gini', 'i']]
     exp = pd.DataFrame({
-        'i': np.array([8.38271666486, 6.22222187602]),
+        'i': np.array([8.20987721375, 6.31944406727]),
         'gini': np.array([0.477747557316, 0.285296967258]),
     }, index=pd.Index(['foo', 'bar'], name='name'))
     assert_frame_equal(obs, exp)
