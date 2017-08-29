@@ -67,46 +67,62 @@ def test_model_data_error():
         model = Model(natdata, sdf)
 
 
-def test_Model1_result():
+def test_Model1_solution():
     natdata, subdata = data()
     model = Model1(natdata, subdata)
     model.construct()
     model.solve()
 
-    # this is the theil result
+    # this is a regression test, results tested 08-29-17
     obs = model.solution
     exp = pd.DataFrame({
-        'i': np.array([111.684009296, 109.052744771]),
-        't': np.array([0.278035566493, 0.164241262537]),
+        'i': np.array([111.43557203, 109.192490733]),
+        't': np.array([0.252259948666, 0.179211800942]),
     }, index=pd.Index(['foo', 'bar'], name='name'))
     assert_frame_equal(obs, exp)
-    # theil_exp = exp
-
-    # df = model.result()
-    # obs = sorted(df.columns)
-    # exp = ['gini', 'gini_orig', 'i', 'i_orig', 'n', 'n_orig']
-    # assert obs == exp
-
-    # obs = df['gini_orig']
-    # exp = subdata['gini']
-    # assert_array_almost_equal(obs, exp)
-
-    # obs = df['i_orig']
-    # exp = subdata['i']
-    # assert_array_almost_equal(obs, exp)
-
-    # obs = df['n_orig']
-    # exp = subdata['n']
-    # assert_array_almost_equal(obs, exp)
 
 
-# def test_Model1_result():
-#     natdata, subdata = data()
-#     model = Model1(natdata, subdata)
-#     model.construct()
-#     model.solve()
+def test_Model1_result():
+    natdata, subdata = data()
+    model = Model1(natdata, subdata)
+    model.construct()
+    model.solve()
+    df = model.result()
 
-#     # ginis in original order
-#     obs = model.result()['gini'].values
-#     exp = [0.45663392, 0.19798731]
-#     assert_array_almost_equal(obs, exp)
+    # test columns
+    obs = sorted(df.columns)
+    exp = ['gini', 'i', 'n', 'n_orig']
+    assert obs == exp
+
+    # test original data
+    obs = df['n_orig']
+    exp = subdata.loc[2020]['n']
+    assert_array_almost_equal(obs, exp)
+    obs = df['n']
+    exp = subdata.loc[2020]['n']
+    assert_array_almost_equal(obs, exp)
+
+    # test result
+    obs = df[['gini', 'i']]
+    exp = pd.DataFrame({
+        'i': np.array([111.43557203, 109.192490733]),
+        'gini': ineq.theil_to_gini(np.array([0.252259948666, 0.179211800942]),
+                                   empirical=False)
+    }, index=pd.Index(['foo', 'bar'], name='name'))
+    assert_frame_equal(obs, exp)
+
+
+def test_Model1_diffusion_result():
+    natdata, subdata = data()
+    model = Model1(natdata, subdata)
+    model.construct(with_diffusion=True)
+    model.solve()
+    df = model.result()
+
+    # test result
+    obs = df[['gini', 'i']]
+    exp = pd.DataFrame({
+        'i': np.array([111.43557203, 109.192490733]),
+        'gini': np.array([0.477747531591, 0.365570088772]),
+    }, index=pd.Index(['foo', 'bar'], name='name'))
+    assert_frame_equal(obs, exp)

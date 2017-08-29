@@ -41,44 +41,44 @@ def threshold_hi_rule(m, f=1.0, b=1.05, relative=True):
     return lhs <= b * rhs
 
 
-def theil_diff_hi_rule(m, idx, b=0.9):
+def theil_diff_hi_rule(m, idx, b=0.8):
     """
-    \frac{t^{t+1} - t^t}{t^{t}} \geq -0.1
+    \frac{t^{t+1} - t^t}{t^{t}} \geq -0.2
 
     @TODO: is 10% in 10 years (or other timeperiod) reasonable?
     """
-    return m.t[idx] >= b * m.data['t']
+    return m.t[idx] >= b * m.data['t'][idx]
 
 
-def theil_diff_lo_rule(m, idx, b=1.1):
+def theil_diff_lo_rule(m, idx, b=1.2):
     """
-    \frac{t^{t+1} - t^t}{t^{t}} \leq 0.1
+    \frac{t^{t+1} - t^t}{t^{t}} \leq 0.2
 
     @TODO: is 10% in 10 years (or other timeperiod) reasonable?
     """
-    return m.t[idx] <= b * m.data['t']
+    return m.t[idx] <= b * m.data['t'][idx]
 
 
-def income_diff_hi_rule(m, idx, b=0.9):
+def income_diff_hi_rule(m, idx, b=0.8):
     """
-    \frac{s^{t+1} - s^t}{s^{t}} \geq -0.1
+    \frac{s^{t+1} - s^t}{s^{t}} \geq -0.2
 
     s^t = \frac{i^t}{I^t}
 
     @TODO: is 10% in 10 years (or other timeperiod) reasonable?
     """
-    return m.i[idx] / m.data['I'] >= b * m.data['i'] / m.data['I_old']
+    return m.i[idx] / m.data['I'] >= b * m.data['i'][idx] / m.data['I_old']
 
 
-def income_diff_lo_rule(m, idx, b=1.1):
+def income_diff_lo_rule(m, idx, b=1.2):
     """
-    \frac{s^{t+1} - s^t}{s^{t}} \leq -0.1
+    \frac{s^{t+1} - s^t}{s^{t}} \leq 0.2
 
     s^t = \frac{i^t}{I^t}
 
     @TODO: is 10% in 10 years (or other timeperiod) reasonable?
     """
-    return m.i[idx] / m.data['I'] <= b * m.data['i'] / m.data['I_old']
+    return m.i[idx] / m.data['I'] <= b * m.data['i'][idx] / m.data['I_old']
 
 
 #
@@ -115,8 +115,8 @@ class Model(object):
             raise ValueError('National data does not have 2 entries')
 
         # save t-1 and t indicies
-        self.histidx = histidx = ndf.index[0]
-        self.modelidx = modelidx = ndf.index[1]
+        self._histidx = histidx = ndf.index[0]
+        self._modelidx = modelidx = ndf.index[1]
 
         # correct population
         sdf.loc[modelidx][n] *= ndf.loc[modelidx][n] / \
@@ -130,12 +130,19 @@ class Model(object):
         self.model_idx = list(range(len(self.orig_idx)))  # must be ordered
 
         # save model data
+        ginis = sdf.loc[histidx][gini].values
+        gini_min = min(0.2, np.min(ginis))
+        gini_max = max(0.8, np.max(ginis))
         self.model_data = {
             'idxs': self.model_idx,
             'n': sdf.loc[modelidx][n].values,
             'i': sdf.loc[histidx][i].values,
-            't': ineq.gini_to_theil(sdf.loc[histidx][gini].values,
+            't': ineq.gini_to_theil(ginis,
                                     empirical=self.empirical),
+            't_min': ineq.gini_to_theil(gini_min,
+                                        empirical=self.empirical),
+            't_max': ineq.gini_to_theil(gini_max,
+                                        empirical=self.empirical),
             'N': ndf.loc[modelidx][n],
             'I': ndf.loc[modelidx][i],
             'I_old': ndf.loc[histidx][i],
@@ -165,20 +172,16 @@ class Model(object):
         }, index=self.orig_idx)
         return self
 
-    # def result(self):
-    #     n, g, i, gini = 'n', 'g', 'i', 'gini'
-    #     df = pd.DataFrame({
-    #         i: self.model_data[g] / self.model_data[n],
-    #         n: self.model_data[n],
-    #         gini: ineq.theil_to_gini(self.solution, empirical=self.empirical),
-    #     })
-    #     df.index = self.sorted_idx
+    def result(self):
+        n, i, gini = 'n', 'i', 'gini'
+        df = pd.DataFrame({
+            i: self.solution['i'],
+            n: self.model_data[n],
+            gini: ineq.theil_to_gini(self.solution['t'], empirical=self.empirical),
+        }, index=self.orig_idx)
 
-    #     df = df.loc[self.orig_idx]
-    #     df['i_orig'] = self.subdata[i]
-    #     df['n_orig'] = self.subdata[n]
-    #     df['gini_orig'] = self.subdata[gini]
-    #     return df
+        df['n_orig'] = self.subdata.loc[self._modelidx][n]
+        return df
 
 
 class Model1(Model):
@@ -189,7 +192,7 @@ class Model1(Model):
     - constrained CDF
     """
 
-    def construct(self):
+    def construct(self, with_diffusion=False):
         self.model = m = mo.ConcreteModel()
         # Model Data
         m.data = self.model_data
@@ -198,7 +201,7 @@ class Model1(Model):
         # Variables
         m.i = mo.Var(m.idxs, within=mo.NonNegativeReals)
         m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
-                     bounds=(0, ineq.MAX_THEIL))
+                     bounds=(m.data['t_min'], m.data['t_max']))
         # Constraints
         m.gdp_sum = mo.Constraint(rule=gdp_sum_rule,
                                   doc='gdp sum = gdp')
@@ -206,7 +209,15 @@ class Model1(Model):
                                  doc='Population under threshold within 5%')
         m.cdf_hi = mo.Constraint(rule=threshold_hi_rule,
                                  doc='Population under threshold within 5%')
-
+        if with_diffusion:
+            m.t_hi = mo.Constraint(m.idxs, rule=theil_diff_hi_rule,
+                                   doc='theil within 10% from past')
+            m.t_lo = mo.Constraint(m.idxs, rule=theil_diff_lo_rule,
+                                   doc='theil within 10% from past')
+            m.i_hi = mo.Constraint(m.idxs, rule=income_diff_hi_rule,
+                                   doc='income share within 10% from past')
+            m.i_lo = mo.Constraint(m.idxs, rule=income_diff_lo_rule,
+                                   doc='income share within 10% from past')
         # Objective
         m.obj = mo.Objective(rule=theil_total_sum_obj, sense=mo.minimize)
         return self
