@@ -1,3 +1,4 @@
+import pytest
 import os
 
 import pandas as pd
@@ -6,7 +7,7 @@ from pandas.util.testing import assert_frame_equal
 
 from salamanca import data
 
-from utils import assert_almost_equal, logging_on, remote, slow
+from utils import assert_almost_equal, logging_on
 
 
 def test_wb_query_url():
@@ -26,7 +27,7 @@ def test_wb_query_url():
     assert obs == exp
 
 
-@remote
+@pytest.mark.remote
 def test_wb_db_query():
     wb = data.WorldBank()
     q = wb._query_url('DPANUSSPF', iso='ind;chn', MRV=5, frequency='M')
@@ -39,7 +40,7 @@ def test_wb_db_query():
                 assert d['value'] == '64.44736363636'
 
 
-@remote
+@pytest.mark.remote
 def test_wb_query():
     wb = data.WorldBank()
     df = wb.query('DPANUSSPF', iso='ind;chn', MRV=5,
@@ -53,8 +54,7 @@ def test_wb_query():
     assert_frame_equal(obs, exp)
 
 
-@remote
-@slow
+@pytest.mark.remote
 def test_wb_query_cache():
     db = data.backend()
     source = 'wb'
@@ -73,8 +73,7 @@ def test_wb_query_cache():
     assert_almost_equal(obs, exp)
 
 
-@remote
-@slow
+@pytest.mark.remote
 def test_wb_exchange_rate():
     wb = data.WorldBank()
     df = wb.exchange_rate()

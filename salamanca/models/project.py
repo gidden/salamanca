@@ -86,4 +86,89 @@ def income_diff_lo_rule(m, idx, b=1.1):
 def theil_total_sum_obj(m):
     T_b = model_T_b(m)
     T_w = model_T_w(m, income_from_data=False)
-    return (m.data['T_w'] - T_b - T_w) ** 2
+    return (m.data['T'] - T_b - T_w) ** 2
+
+
+class Model(object):
+    """Base class for Projection Models"""
+
+    def __init__(self, natdata, subdata, empirical=False):
+        self.natdata = natdata
+        self.subdata = subdata
+        self.empirical = empirical
+
+        self._setup_model_data(natdata, subdata)
+        self._check_model_data()
+
+    def _setup_model_data(self, natdata, subdata):
+        required = (n, i, gini) = 'n', 'i', 'gini'
+        ndf, sdf = self.natdata.copy(), self.subdata.copy()
+        msg = 'Must include all of {} in {} data'
+        if any(x not in ndf for x in required):
+            raise ValueError(msg.format(required, 'national'))
+        if any(x not in sdf for x in required):
+            raise ValueError(msg.format(required, 'subnational'))
+        if len(ndf.index) != 2:
+            raise ValueError('National data does not have 2 entries')
+
+        self.histidx = histidx = ndf.index[0]
+        self.modelidx = modelidx = ndf.index[1]
+
+        # correct population
+        sdf.loc[modelidx, n] *= ndf.loc[modelidx, n] / \
+            sdf.loc[modelidx, n].sum()
+
+        # # save index of sorted values
+        # self.orig_idx = sdf.index
+        # sdf = sdf.sort_values(by=gini)
+        # self.sorted_idx = sdf.index
+        # sdf = sdf.reset_index()
+        # self.model_idx = sdf.index  # must be ordered
+
+        # save model data
+        self.model_data = {
+            'idxs': self.model_idx.values,
+            'n': sdf.loc[modelidx, n].values,
+            'i': sdf.loc[histidx, i].values,
+            't': ineq.gini_to_theil(sdf.loc[histidx, gini].values,
+                                    empirical=self.empirical),
+            'N': ndf.loc[modelidx, n],
+            'I': ndf.loc[modelidx, i],
+            'I_old': ndf.loc[histidx, i],
+            'G': ndf.loc[modelidx, n] * ndf.loc[modelidx, i],
+            'T': ineq.gini_to_theil(ndf.loc[modelidx, gini],
+                                    empirical=self.empirical),
+        }
+
+    def _check_model_data(self):
+        obs = self.model_data.loc[self.modelidx, 'N']
+        exp = np.sum(self.model_data.loc[self.modelidx, 'n'])
+        if not np.isclose(obs, exp):
+            raise ValueError('Population values do not sum to national')
+
+    def construct(self):
+        raise NotImplementedError()
+
+    def solve(self):
+        m = self.model
+        solver = mo.SolverFactory('ipopt')
+        result = solver.solve(m)  # , tee=True)
+        result.write()
+        m.solutions.load_from(result)
+        self.solution = pd.Series(m.t.get_values().values(), name='thiel')
+        return self
+
+    # def result(self):
+    #     n, g, i, gini = 'n', 'g', 'i', 'gini'
+    #     df = pd.DataFrame({
+    #         i: self.model_data[g] / self.model_data[n],
+    #         n: self.model_data[n],
+    #         gini: ineq.theil_to_gini(self.solution, empirical=self.empirical),
+    #     })
+    #     df.index = self.sorted_idx
+
+    #     df = df.loc[self.orig_idx]
+    #     df['i_orig'] = self.subdata[i]
+    #     df['n_orig'] = self.subdata[n]
+    #     df['gini_orig'] = self.subdata[gini]
+    #     return df
