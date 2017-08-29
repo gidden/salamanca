@@ -23,7 +23,7 @@ def gdp_sum_rule(m):
     return sum(m.data['n'][idx] * m.i[idx] for idx in m.idxs) == m.data['G']
 
 
-def threshold_lo_rule(m, idx, f=1.0, b=0.95, relative=True):
+def threshold_lo_rule(m, f=1.0, b=0.95, relative=True):
     i = m.data['I']
     x = f * i if relative else f
     rhs = m.data['N'] * below_threshold(x, i, m.data['T'])
@@ -32,7 +32,7 @@ def threshold_lo_rule(m, idx, f=1.0, b=0.95, relative=True):
     return lhs >= b * rhs
 
 
-def threshold_hi_rule(m, idx, f=1.0, b=1.05, relative=True):
+def threshold_hi_rule(m, f=1.0, b=1.05, relative=True):
     i = m.data['I']
     x = f * i if relative else f
     rhs = m.data['N'] * below_threshold(x, i, m.data['T'])
@@ -123,15 +123,15 @@ class Model(object):
             sdf.loc[modelidx][n].sum()
 
         # # save index of sorted values
-        # self.orig_idx = sdf.index
+        self.orig_idx = sdf.loc[modelidx].index
         # sdf = sdf.sort_values(by=gini)
         # self.sorted_idx = sdf.index
         # sdf = sdf.reset_index()
-        self.model_idx = sdf.index  # must be ordered
+        self.model_idx = list(range(len(self.orig_idx)))  # must be ordered
 
         # save model data
         self.model_data = {
-            'idxs': self.model_idx.values,
+            'idxs': self.model_idx,
             'n': sdf.loc[modelidx][n].values,
             'i': sdf.loc[histidx][i].values,
             't': ineq.gini_to_theil(sdf.loc[histidx][gini].values,
@@ -159,7 +159,10 @@ class Model(object):
         result = solver.solve(m)  # , tee=True)
         result.write()
         m.solutions.load_from(result)
-        self.solution = pd.Series(m.t.get_values().values(), name='thiel')
+        self.solution = pd.DataFrame({
+            'i': m.i.get_values().values(),
+            't': m.t.get_values().values(),
+        }, index=self.orig_idx)
         return self
 
     # def result(self):
@@ -176,3 +179,34 @@ class Model(object):
     #     df['n_orig'] = self.subdata[n]
     #     df['gini_orig'] = self.subdata[gini]
     #     return df
+
+
+class Model1(Model):
+    """
+    Minimize L2 norm of Theil difference under
+
+    - GDP sum
+    - constrained CDF
+    """
+
+    def construct(self):
+        self.model = m = mo.ConcreteModel()
+        # Model Data
+        m.data = self.model_data
+        # Sets
+        m.idxs = mo.Set(initialize=m.data['idxs'])
+        # Variables
+        m.i = mo.Var(m.idxs, within=mo.NonNegativeReals)
+        m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
+                     bounds=(0, ineq.MAX_THEIL))
+        # Constraints
+        m.gdp_sum = mo.Constraint(rule=gdp_sum_rule,
+                                  doc='gdp sum = gdp')
+        m.cdf_lo = mo.Constraint(rule=threshold_lo_rule,
+                                 doc='Population under threshold within 5%')
+        m.cdf_hi = mo.Constraint(rule=threshold_hi_rule,
+                                 doc='Population under threshold within 5%')
+
+        # Objective
+        m.obj = mo.Objective(rule=theil_total_sum_obj, sense=mo.minimize)
+        return self

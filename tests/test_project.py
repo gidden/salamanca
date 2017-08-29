@@ -4,7 +4,9 @@ import numpy as np
 import pandas as pd
 
 from salamanca import ineq
-from salamanca.models.project import Model
+from salamanca.models.project import Model, Model1
+
+from pandas.testing import assert_frame_equal
 
 from utils import assert_almost_equal, assert_array_almost_equal
 
@@ -65,36 +67,37 @@ def test_model_data_error():
         model = Model(natdata, sdf)
 
 
-# def test_Model1_full():
-#     natdata, subdata = data()
-#     model = Model1(natdata, subdata)
-#     model.construct()
-#     model.solve()
+def test_Model1_result():
+    natdata, subdata = data()
+    model = Model1(natdata, subdata)
+    model.construct()
+    model.solve()
 
-#     # this is the theil result
-#     # equivalent ginis are: 0.19798731, 0.45663392
-#     obs = model.solution
-#     # solution is ordered small to large
-#     exp = np.array([0.062872, 0.369337])
-#     assert_array_almost_equal(obs, exp)
-#     theil_exp = exp
+    # this is the theil result
+    obs = model.solution
+    exp = pd.DataFrame({
+        'i': np.array([111.684009296, 109.052744771]),
+        't': np.array([0.278035566493, 0.164241262537]),
+    }, index=pd.Index(['foo', 'bar'], name='name'))
+    assert_frame_equal(obs, exp)
+    # theil_exp = exp
 
-#     df = model.result()
-#     obs = sorted(df.columns)
-#     exp = ['gini', 'gini_orig', 'i', 'i_orig', 'n', 'n_orig']
-#     assert obs == exp
+    # df = model.result()
+    # obs = sorted(df.columns)
+    # exp = ['gini', 'gini_orig', 'i', 'i_orig', 'n', 'n_orig']
+    # assert obs == exp
 
-#     obs = df['gini_orig']
-#     exp = subdata['gini']
-#     assert_array_almost_equal(obs, exp)
+    # obs = df['gini_orig']
+    # exp = subdata['gini']
+    # assert_array_almost_equal(obs, exp)
 
-#     obs = df['i_orig']
-#     exp = subdata['i']
-#     assert_array_almost_equal(obs, exp)
+    # obs = df['i_orig']
+    # exp = subdata['i']
+    # assert_array_almost_equal(obs, exp)
 
-#     obs = df['n_orig']
-#     exp = subdata['n']
-#     assert_array_almost_equal(obs, exp)
+    # obs = df['n_orig']
+    # exp = subdata['n']
+    # assert_array_almost_equal(obs, exp)
 
 
 # def test_Model1_result():
