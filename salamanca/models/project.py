@@ -224,7 +224,7 @@ class Model1(Model):
     with optionally (assuming 10 year time steps):
 
     - maximum theil diffusion of 1% per year
-    - maximum income share diffusion of 2% per year    
+    - maximum income share diffusion of 2% per year
     """
 
     def construct(self, with_diffusion=False):
@@ -255,4 +255,57 @@ class Model1(Model):
                                    doc='income share within 20% from past')
         # Objective
         m.obj = mo.Objective(rule=theil_total_sum_obj, sense=mo.minimize)
+        return self
+
+
+class Runner(object):
+    """Simple class that runs all projection values for a given full projection
+    instance
+
+    Example
+    -------
+
+    ```
+    runner = Runner(natdata, subnatdata, Model1)
+    for time1, time2 in runner.horizon():
+        runner.project(time1, time2)
+    result = runner.result
+    ```
+    """
+
+    def __init__(self, natdata, subdata, model, empirical=False):
+        self.natdata = natdata.copy()
+        self.subdata = subdata.copy()
+        self._orig_idx = subdata.index
+        self._result = subdata.copy().sort_index()
+        self.Model = Model
+        self.empirical = empirical
+
+    def horizon(self):
+        return zip(self.natdata.index[:-1], self.natdata.index[1:])
+
+    def result(self):
+        return self._result.loc[self._orig_idx]
+
+    def _data(self, t1, t2):
+        ndf = self.natdata.loc[t1:t2]
+        sdf = self._result.loc[t1:t2]
+        return ndf, sdf
+
+    def _run(self, ndf, sdf, *args, **kwargs):
+        model = self.Model(ndf, sdf, empirical=self.empirical)
+        model.construct(*args, **kwargs)
+        model.solve()
+        return model.result()
+
+    def _update(self, t, df):
+        df = df.sort_index()
+        idx = (t, list(df.index.values))
+        self._result.loc[idx, 'i'] = df['i'].values
+        self._result.loc[idx, 'gini'] = df['gini'].values
+
+    def project(self, t1, t2, *args, **kwargs):
+        ndf, sdf = self._data(t1, t2)
+        df = self._run(ndf, sdf, *args, **kwargs)
+        self._update(t2, df)
         return self

@@ -5,6 +5,7 @@ import pandas as pd
 
 from salamanca import ineq
 from salamanca.models.project import Model, Model1
+from salamanca.models.project import Runner
 
 from pandas.testing import assert_frame_equal
 
@@ -39,6 +40,9 @@ if __name__ == '__main__':
     print(s.loc[n.index[1]])
     print(s.loc[2020]['n'])
     print(s.loc[(2020,), 'n'])
+    print('idx groups')
+    print(n.loc[n.index[0]:n.index[1]])
+    print(s.loc[n.index[0]:n.index[1]])
 
 
 def test_model_data_pop():
@@ -125,4 +129,39 @@ def test_Model1_diffusion_result():
         'i': np.array([8.20987721375, 6.31944406727]),
         'gini': np.array([0.477747557316, 0.285296967258]),
     }, index=pd.Index(['foo', 'bar'], name='name'))
+    assert_frame_equal(obs, exp)
+
+
+def test_runner_horizon():
+    natdata, subdata = data()
+    runner = Runner(natdata, subdata, Model)
+    assert [(2010, 2020)] == list(runner.horizon())
+
+
+def test_runner_data():
+    natdata, subdata = data()
+    runner = Runner(natdata, subdata, Model)
+    obs_n, obs_s = runner._data(2010, 2020)
+    assert_frame_equal(obs_n, natdata)
+    assert_frame_equal(obs_s, subdata)
+
+
+def test_runner_update():
+    natdata, subdata = data()
+    runner = Runner(natdata, subdata, Model)
+
+    # before update, the result should be same as subdata
+    obs = runner.result()
+    exp = subdata
+    assert_frame_equal(obs, exp)
+
+    # update works on non-sorted index
+    df = pd.DataFrame({
+        'i': [9, 7],
+        'gini': [0.47, 0.29],
+    }, index=pd.Index(['foo', 'bar'], name='name'))
+    runner._update(2020, df)
+    obs = runner.result()
+    exp.loc[(2020,), 'gini'] = df['gini'].values
+    exp.loc[(2020,), 'i'] = df['i'].values
     assert_frame_equal(obs, exp)
