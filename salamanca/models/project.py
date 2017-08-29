@@ -11,6 +11,9 @@ import pyomo.environ as mo
 from salamanca import ineq
 from salamanca.models.utils import below_threshold, model_T_b, model_T_w
 
+# quiet pandas setwithcopy warnings
+pd.options.mode.chained_assignment = None  # default='warn'
+
 #
 # Constraints
 #
@@ -111,38 +114,39 @@ class Model(object):
         if len(ndf.index) != 2:
             raise ValueError('National data does not have 2 entries')
 
+        # save t-1 and t indicies
         self.histidx = histidx = ndf.index[0]
         self.modelidx = modelidx = ndf.index[1]
 
         # correct population
-        sdf.loc[modelidx, n] *= ndf.loc[modelidx, n] / \
-            sdf.loc[modelidx, n].sum()
+        sdf.loc[modelidx][n] *= ndf.loc[modelidx][n] / \
+            sdf.loc[modelidx][n].sum()
 
         # # save index of sorted values
         # self.orig_idx = sdf.index
         # sdf = sdf.sort_values(by=gini)
         # self.sorted_idx = sdf.index
         # sdf = sdf.reset_index()
-        # self.model_idx = sdf.index  # must be ordered
+        self.model_idx = sdf.index  # must be ordered
 
         # save model data
         self.model_data = {
             'idxs': self.model_idx.values,
-            'n': sdf.loc[modelidx, n].values,
-            'i': sdf.loc[histidx, i].values,
-            't': ineq.gini_to_theil(sdf.loc[histidx, gini].values,
+            'n': sdf.loc[modelidx][n].values,
+            'i': sdf.loc[histidx][i].values,
+            't': ineq.gini_to_theil(sdf.loc[histidx][gini].values,
                                     empirical=self.empirical),
-            'N': ndf.loc[modelidx, n],
-            'I': ndf.loc[modelidx, i],
-            'I_old': ndf.loc[histidx, i],
-            'G': ndf.loc[modelidx, n] * ndf.loc[modelidx, i],
-            'T': ineq.gini_to_theil(ndf.loc[modelidx, gini],
+            'N': ndf.loc[modelidx][n],
+            'I': ndf.loc[modelidx][i],
+            'I_old': ndf.loc[histidx][i],
+            'G': ndf.loc[modelidx][n] * ndf.loc[modelidx][i],
+            'T': ineq.gini_to_theil(ndf.loc[modelidx][gini],
                                     empirical=self.empirical),
         }
 
     def _check_model_data(self):
-        obs = self.model_data.loc[self.modelidx, 'N']
-        exp = np.sum(self.model_data.loc[self.modelidx, 'n'])
+        obs = self.model_data['N']
+        exp = np.sum(self.model_data['n'])
         if not np.isclose(obs, exp):
             raise ValueError('Population values do not sum to national')
 

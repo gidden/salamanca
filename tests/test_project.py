@@ -34,20 +34,24 @@ if __name__ == '__main__':
     print('first idx')
     print(n.iloc[0])
     print(s.loc[n.index[0]])
+    print(s.loc[n.index[1]])
+    print(s.loc[2020]['n'])
+    print(s.loc[(2020,), 'n'])
 
 
-# def test_model_data_pop():
-#     # note all subdata order is swapped in model_data due to sorting by gini
-#     natdata, subdata = data()
-#     model = Model(natdata, subdata)
+def test_model_data_pop():
+    # note all subdata order is swapped in model_data due to sorting by gini
+    natdata, subdata = data()
+    model = Model(natdata, subdata)
 
-#     # pop
-#     obs = model.model_data['N']
-#     exp = natdata['n']
-#     assert_almost_equal(obs, exp)
-#     obs = model.model_data['n']
-#     exp = subdata['n'] * natdata['n'] / subdata['n'].sum()
-#     assert_array_almost_equal(obs, exp[::-1])
+    # pop
+    obs = model.model_data['N']
+    exp = natdata.loc[2020]['n']
+    assert_almost_equal(obs, exp)
+    obs = model.model_data['n']
+    exp = subdata.loc[2020]['n'] * \
+        natdata.loc[2020]['n'] / subdata.loc[2020]['n'].sum()
+    assert_array_almost_equal(obs, exp)
 
 
 # def test_model_data_error():
