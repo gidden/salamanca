@@ -137,13 +137,17 @@ def test_runner_horizon():
     runner = Runner(natdata, subdata, Model)
     assert [(2010, 2020)] == list(runner.horizon())
 
+    df = pd.DataFrame({'a': range(3)}, index=[2010, 2020, 2030])
+    runner = Runner(df, subdata, Model)
+    assert [(2010, 2020), (2020, 2030)] == list(runner.horizon())
+
 
 def test_runner_data():
     natdata, subdata = data()
     runner = Runner(natdata, subdata, Model)
     obs_n, obs_s = runner._data(2010, 2020)
     assert_frame_equal(obs_n, natdata)
-    assert_frame_equal(obs_s, subdata)
+    assert_frame_equal(obs_s, subdata.sort_index())
 
 
 def test_runner_update():
