@@ -139,7 +139,7 @@ def test_runner_horizon():
     assert [(2010, 2020)] == list(runner.horizon())
 
     # test of extended fake data
-    df = pd.DataFrame({'a': range(3)}, index=[2010, 2020, 2030])
+    df = pd.DataFrame({'n': range(3)}, index=[2010, 2020, 2030])
     runner = Runner(df, subdata, Model)
     assert [(2010, 2020), (2020, 2030)] == list(runner.horizon())
 
@@ -153,11 +153,11 @@ def test_runner_data():
     assert_frame_equal(obs_s, subdata.sort_index())
 
     # test of extended fake data
-    df1 = pd.DataFrame({'a': range(3)},
+    df1 = pd.DataFrame({'n': range(3)},
                        index=pd.Index([2010, 2020, 2030], name='year'))
     idx = pd.MultiIndex.from_product([[2010, 2020, 2030], ['foo', 'bar']],
                                      names=['year', 'name'])
-    df2 = pd.DataFrame({'a': range(3, 9)}, index=idx)
+    df2 = pd.DataFrame({'n': range(3, 9)}, index=idx)
     runner = Runner(df1, df2, Model)
     # 2010-2020
     obs_1, obs_2 = runner._data(2010, 2020)

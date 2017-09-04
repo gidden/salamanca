@@ -147,8 +147,9 @@ class Model(object):
         self._modelidx = modelidx = ndf.index[1]
 
         # correct population
-        sdf.loc[modelidx][n] *= ndf.loc[modelidx][n] / \
-            sdf.loc[modelidx][n].sum()
+        ratio = ndf.loc[modelidx][n] / sdf.loc[modelidx][n].sum()
+        sdf.loc[modelidx][n] *= ratio
+        assert(sdf.loc[modelidx][n].sum() == ndf.loc[modelidx][n])
 
         # # save index of sorted values
         self.orig_idx = sdf.loc[modelidx].index
@@ -269,7 +270,7 @@ class Runner(object):
     runner = Runner(natdata, subnatdata, Model1)
     for time1, time2 in runner.horizon():
         runner.project(time1, time2)
-    result = runner.result
+    result = runner.result()
     ```
     """
 
@@ -278,8 +279,13 @@ class Runner(object):
         self.subdata = subdata.copy()
         self._orig_idx = subdata.index
         self._result = subdata.copy().sort_index()
-        self.Model = Model
+        self.Model = model
         self.empirical = empirical
+
+        if natdata.isnull().values.any():
+            raise ValueError('Null values found in national data')
+        if subdata['n'].isnull().values.any():
+            raise ValueError('Null values found in subnational data')
 
     def horizon(self):
         return zip(self.natdata.index[:-1], self.natdata.index[1:])
