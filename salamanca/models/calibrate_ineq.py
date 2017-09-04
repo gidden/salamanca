@@ -136,6 +136,7 @@ class Model(object):
         self.model_data = {
             'idxs': self.model_idx.values,
             'n': sdf[n].values,
+            'n_frac': sdf[n].values / ndf[n],
             'i': sdf[i].values,
             'g': (sdf[n] * sdf[i]).values,
             't': ineq.gini_to_theil(sdf[gini].values, empirical=self.empirical),

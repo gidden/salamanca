@@ -45,15 +45,15 @@ def below_threshold(x, i, t, mean=True):
 def model_T_w(m, income_from_data=True):
     def _t_w(m, idx):
         i = m.data['i'] if income_from_data else m.i
-        return i[idx] * m.data['n'][idx] / m.data['G'] * m.t[idx]
+        return i[idx] * m.data['n_frac'][idx] / m.data['I'] * m.t[idx]
     T_w = sum(_t_w(m, idx) for idx in m.idxs)
     return T_w
 
 
 def model_T_b(m):
     def _t_b(m, idx):
-        gfrac = (m.data['n'][idx] * m.i[idx]) / m.data['G']
-        nfrac = m.data['n'][idx] / m.data['N']
-        return gfrac * mo.log(gfrac / nfrac)
+        ifrac = m.i[idx] / m.data['I']
+        nfrac = m.data['n_frac'][idx]
+        return nfrac * ifrac * mo.log(ifrac)
     T_b = sum(_t_b(m, idx) for idx in m.idxs)
     return T_b

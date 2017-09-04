@@ -20,14 +20,14 @@ pd.options.mode.chained_assignment = None  # default='warn'
 
 
 def gdp_sum_rule(m):
-    return sum(m.data['n'][idx] * m.i[idx] for idx in m.idxs) == m.data['G']
+    return sum(m.data['n_frac'][idx] * m.i[idx] for idx in m.idxs) == m.data['I']
 
 
 def threshold_lo_rule(m, f=1.0, b=0.95, relative=True):
     i = m.data['I']
     x = f * i if relative else f
-    rhs = m.data['N'] * below_threshold(x, i, m.data['T'])
-    lhs = sum(m.data['n'][idx] * below_threshold(x, m.i[idx], m.t[idx])
+    rhs = below_threshold(x, i, m.data['T'])
+    lhs = sum(m.data['n_frac'][idx] * below_threshold(x, m.i[idx], m.t[idx])
               for idx in m.idxs)
     return lhs >= b * rhs
 
@@ -35,8 +35,8 @@ def threshold_lo_rule(m, f=1.0, b=0.95, relative=True):
 def threshold_hi_rule(m, f=1.0, b=1.05, relative=True):
     i = m.data['I']
     x = f * i if relative else f
-    rhs = m.data['N'] * below_threshold(x, i, m.data['T'])
-    lhs = sum(m.data['n'][idx] * below_threshold(x, m.i[idx], m.t[idx])
+    rhs = below_threshold(x, i, m.data['T'])
+    lhs = sum(m.data['n_frac'][idx] * below_threshold(x, m.i[idx], m.t[idx])
               for idx in m.idxs)
     return lhs <= b * rhs
 
@@ -67,7 +67,7 @@ def income_diff_hi_rule(m, idx, b=0.8):
 
     @TODO: is 20% in 10 years (or other timeperiod) reasonable?
     """
-    return m.i[idx] / m.data['I'] >= b * m.data['i'][idx] / m.data['I_old']
+    return m.i[idx] >= b * m.data['i'][idx] * m.data['I'] / m.data['I_old']
 
 
 def income_diff_lo_rule(m, idx, b=1.2):
@@ -78,7 +78,7 @@ def income_diff_lo_rule(m, idx, b=1.2):
 
     @TODO: is 20% in 10 years (or other timeperiod) reasonable?
     """
-    return m.i[idx] / m.data['I'] <= b * m.data['i'][idx] / m.data['I_old']
+    return m.i[idx] <= b * m.data['i'][idx] * m.data['I'] / m.data['I_old']
 
 
 def share_diff_hi_rule(m, idx, b=0.8):
@@ -89,9 +89,8 @@ def share_diff_hi_rule(m, idx, b=0.8):
 
     @TODO: is 20% in 10 years (or other timeperiod) reasonable?
     """
-    lhs = (m.i[idx] * m.data['n'][idx]) / (m.data['I'] * m.data['N'])
-    rhs = (m.data['i'][idx] * m.data['n_old'][idx]) / \
-        (m.data['I_old'] * m.data['N_old'])
+    lhs = m.i[idx] * m.data['n_frac'][idx] / m.data['I']
+    rhs = m.data['i'][idx] * m.data['n_frac_old'][idx] / m.data['I_old']
     return lhs >= b * rhs
 
 
@@ -103,9 +102,8 @@ def share_diff_lo_rule(m, idx, b=1.2):
 
     @TODO: is 20% in 10 years (or other timeperiod) reasonable?
     """
-    lhs = (m.i[idx] * m.data['n'][idx]) / (m.data['I'] * m.data['N'])
-    rhs = (m.data['i'][idx] * m.data['n_old'][idx]) / \
-        (m.data['I_old'] * m.data['N_old'])
+    lhs = m.i[idx] * m.data['n_frac'][idx] / m.data['I']
+    rhs = m.data['i'][idx] * m.data['n_frac_old'][idx] / m.data['I_old']
     return lhs <= b * rhs
 
 
@@ -160,41 +158,53 @@ class Model(object):
 
         # save model data
         ginis = sdf.loc[histidx][gini].values
-        gini_min = min(0.2, np.min(ginis))
-        gini_max = max(0.8, np.max(ginis))
+        gini_min = min(0.15, np.min(ginis))
+        gini_max = max(0.85, np.max(ginis))
         self.model_data = {
             'idxs': self.model_idx,
-            'n_old': sdf.loc[histidx][n].values,
-            'n': sdf.loc[modelidx][n].values,
+            'n_frac_old': sdf.loc[histidx][n].values / ndf.loc[histidx][n],
+            'n_frac': sdf.loc[modelidx][n].values / ndf.loc[modelidx][n],
             'i': sdf.loc[histidx][i].values,
+            'i_min': 0.1 * np.min(sdf.loc[histidx][i].values),
+            'i_max': 10 * np.max(sdf.loc[histidx][i].values),
             't': ineq.gini_to_theil(ginis,
                                     empirical=self.empirical),
             't_min': ineq.gini_to_theil(gini_min,
                                         empirical=self.empirical),
             't_max': ineq.gini_to_theil(gini_max,
                                         empirical=self.empirical),
-            'N': ndf.loc[modelidx][n],
-            'N_old': ndf.loc[histidx][n],
             'I': ndf.loc[modelidx][i],
             'I_old': ndf.loc[histidx][i],
-            'G': ndf.loc[modelidx][n] * ndf.loc[modelidx][i],
             'T': ineq.gini_to_theil(ndf.loc[modelidx][gini],
                                     empirical=self.empirical),
         }
 
     def _check_model_data(self):
-        obs = self.model_data['N']
-        exp = np.sum(self.model_data['n'])
+        obs = 1
+        exp = np.sum(self.model_data['n_frac'])
         if not np.isclose(obs, exp):
             raise ValueError('Population values do not sum to national')
 
     def construct(self):
         raise NotImplementedError()
 
-    def solve(self):
+    def debug(self, pth=''):
+        skeys = ['idxs', 'n_frac_old', 'n_frac', 'i', 't',
+                 't_min', 't_max', 'i_min', 'i_max']
+        sdf = pd.DataFrame({s: self.model_data[s] for s in skeys},
+                           index=self.orig_idx)
+        sdf.to_csv(pth + 'sdf.csv')
+
+        nkeys = ['I', 'I_old', 'T']
+        ndf = pd.Series({n: self.model_data[n] for n in nkeys})
+        ndf.to_csv(pth + 'ndf.csv')
+
+    def solve(self, options={}, **kwargs):
         m = self.model
         solver = mo.SolverFactory('ipopt')
-        result = solver.solve(m)  # , tee=True)
+        for k, v in options.items():
+            solver.options[k] = v
+        result = solver.solve(m, **kwargs)
         result.write()
         m.solutions.load_from(result)
         self.solution = pd.DataFrame({
@@ -204,10 +214,10 @@ class Model(object):
         return self
 
     def result(self):
-        n, i, gini = 'n', 'i', 'gini'
+        nfrac, n, i, gini = 'n_frac', 'n', 'i', 'gini'
         df = pd.DataFrame({
             i: self.solution['i'],
-            n: self.model_data[n],
+            n: self.model_data[nfrac] * self.natdata.loc[self._modelidx][n],
             gini: ineq.theil_to_gini(self.solution['t'], empirical=self.empirical),
         }, index=self.orig_idx)
 
@@ -235,8 +245,9 @@ class Model1(Model):
         # Sets
         m.idxs = mo.Set(initialize=m.data['idxs'])
         # Variables
-        m.i = mo.Var(m.idxs, within=mo.NonNegativeReals)
-        m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
+        m.i = mo.Var(m.idxs, within=mo.PositiveReals,
+                     bounds=(m.data['i_min'], m.data['i_max']))
+        m.t = mo.Var(m.idxs, within=mo.PositiveReals,
                      bounds=(m.data['t_min'], m.data['t_max']))
         # Constraints
         m.gdp_sum = mo.Constraint(rule=gdp_sum_rule,
@@ -298,20 +309,21 @@ class Runner(object):
         sdf = self._result.loc[t1:t2]
         return ndf, sdf
 
-    def _run(self, ndf, sdf, *args, **kwargs):
-        model = self.Model(ndf, sdf, empirical=self.empirical)
-        model.construct(*args, **kwargs)
-        model.solve()
-        return model.result()
-
     def _update(self, t, df):
         df = df.sort_index()
         idx = (t, list(df.index.values))
         self._result.loc[idx, 'i'] = df['i'].values
         self._result.loc[idx, 'gini'] = df['gini'].values
 
-    def project(self, t1, t2, *args, **kwargs):
+    def make_model(self, t1, t2, *args, **kwargs):
+        self.solve_t = t2
         ndf, sdf = self._data(t1, t2)
-        df = self._run(ndf, sdf, *args, **kwargs)
-        self._update(t2, df)
+        self.model = self.Model(ndf, sdf, empirical=self.empirical)
+        self.model.construct(*args, **kwargs)
+        return self
+
+    def solve(self, *args, **kwargs):
+        self.model.solve(*args, **kwargs)
+        df = self.model.result()
+        self._update(self.solve_t, df)
         return self
