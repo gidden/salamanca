@@ -160,20 +160,21 @@ class Model(object):
         ginis = sdf.loc[histidx][gini].values
         gini_min = min(0.15, np.min(ginis))
         gini_max = max(0.85, np.max(ginis))
+        self.scale_I = ndf.loc[modelidx][i]
         self.model_data = {
             'idxs': self.model_idx,
             'n_frac_old': sdf.loc[histidx][n].values / ndf.loc[histidx][n],
             'n_frac': sdf.loc[modelidx][n].values / ndf.loc[modelidx][n],
             'i': sdf.loc[histidx][i].values,
-            'i_min': 0.1 * np.min(sdf.loc[histidx][i].values),
-            'i_max': 10 * np.max(sdf.loc[histidx][i].values),
+            'i_min': 0.1 * np.min(sdf.loc[histidx][i].values) / ndf.loc[histidx][i],
+            'i_max': 10 * np.max(sdf.loc[histidx][i].values) / ndf.loc[histidx][i],
             't': ineq.gini_to_theil(ginis,
                                     empirical=self.empirical),
             't_min': ineq.gini_to_theil(gini_min,
                                         empirical=self.empirical),
             't_max': ineq.gini_to_theil(gini_max,
                                         empirical=self.empirical),
-            'I': ndf.loc[modelidx][i],
+            'I': 1.0,
             'I_old': ndf.loc[histidx][i],
             'T': ineq.gini_to_theil(ndf.loc[modelidx][gini],
                                     empirical=self.empirical),
@@ -216,7 +217,7 @@ class Model(object):
     def result(self):
         nfrac, n, i, gini = 'n_frac', 'n', 'i', 'gini'
         df = pd.DataFrame({
-            i: self.solution['i'],
+            i: self.solution[i] * self.scale_I,
             n: self.model_data[nfrac] * self.natdata.loc[self._modelidx][n],
             gini: ineq.theil_to_gini(self.solution['t'], empirical=self.empirical),
         }, index=self.orig_idx)
