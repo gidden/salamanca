@@ -51,12 +51,8 @@ def test_model_data_pop():
     model = Model(natdata, subdata)
 
     # pop
-    obs = model.model_data['N']
-    exp = natdata.loc[2020]['n']
-    assert_almost_equal(obs, exp)
-    obs = model.model_data['n']
-    exp = subdata.loc[2020]['n'] * \
-        natdata.loc[2020]['n'] / subdata.loc[2020]['n'].sum()
+    obs = model.model_data['n_frac']
+    exp = subdata.loc[2020]['n'] / subdata.loc[2020]['n'].sum()
     assert_array_almost_equal(obs, exp)
 
 
@@ -77,11 +73,12 @@ def test_Model1_solution():
     model.construct()
     model.solve()
 
-    # this is a regression test, results tested 08-29-17
+    # this is a regression test, results tested 09-04-17
     obs = model.solution
     exp = pd.DataFrame({
-        'i': np.array([7.007136, 6.995986]),
-        't': np.array([0.241891, 0.185623]),
+        # note this is scaled by I
+        'i': np.array([1.074197, 0.9582637]),
+        't': np.array([0.253772, 0.173215]),
     }, index=pd.Index(['foo', 'bar'], name='name'))
     assert_frame_equal(obs, exp)
 
@@ -109,8 +106,8 @@ def test_Model1_result():
     # this is a regression test, results tested 08-29-17
     obs = df[['gini', 'i']]
     exp = pd.DataFrame({
-        'i': np.array([7.007136, 6.995986]),
-        'gini': ineq.theil_to_gini(np.array([0.241891, 0.185623]),
+        'i': np.array([1.074197, 0.9582637]) * natdata.loc[2020]['i'],
+        'gini': ineq.theil_to_gini(np.array([0.253772, 0.1732152]),
                                    empirical=False)
     }, index=pd.Index(['foo', 'bar'], name='name'))
     assert_frame_equal(obs, exp)
