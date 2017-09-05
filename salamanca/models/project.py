@@ -147,7 +147,11 @@ class Model(object):
         # correct population
         ratio = ndf.loc[modelidx][n] / sdf.loc[modelidx][n].sum()
         sdf.loc[modelidx][n] *= ratio
-        assert(sdf.loc[modelidx][n].sum() == ndf.loc[modelidx][n])
+        n_s = sdf.loc[modelidx][n].sum()
+        n_n = ndf.loc[modelidx][n]
+        if not np.isclose(n_s, n_n):
+            msg = 'Subnational ({}) != national ({}) population using ratio: {}'
+            raise RuntimeError(msg.format(n_s, n_n, ratio))
 
         # # save index of sorted values
         self.orig_idx = sdf.loc[modelidx].index
