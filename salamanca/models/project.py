@@ -107,6 +107,21 @@ def share_diff_lo_rule(m, idx, b=1.2):
     return lhs <= b * rhs
 
 
+def income_direction_rule(m, idx):
+    dI = m.data['I_new'] - m.data['I_old']
+    if dI >= 0:
+        return m.i[idx] >= m.data['i'][idx] / m.data['I_new']
+    else:
+        return m.i[idx] <= m.data['i'][idx] / m.data['I_new']
+
+
+def theil_direction_rule(m, idx):
+    dT = m.data['T'] - m.data['T_old']
+    if dT <= 0:
+        return m.t[idx] <= m.data['t'][idx]
+    else:
+        return m.t[idx] > m.data['t'][idx]
+
 #
 # Objectives
 #
@@ -179,9 +194,12 @@ class Model(object):
             't_max': ineq.gini_to_theil(gini_max,
                                         empirical=self.empirical),
             'I': 1.0,
+            'I_new': ndf.loc[modelidx][i],
             'I_old': ndf.loc[histidx][i],
             'T': ineq.gini_to_theil(ndf.loc[modelidx][gini],
                                     empirical=self.empirical),
+            'T_old': ineq.gini_to_theil(ndf.loc[histidx][gini],
+                                        empirical=self.empirical),
         }
 
     def _check_model_data(self):
@@ -243,7 +261,7 @@ class Model1(Model):
     - maximum income share diffusion of 2% per year
     """
 
-    def construct(self, with_diffusion=False):
+    def construct(self, with_diffusion=False, with_direction=False):
         self.model = m = mo.ConcreteModel()
         # Model Data
         m.data = self.model_data
@@ -270,6 +288,11 @@ class Model1(Model):
                                    doc='income share within 20% from past')
             m.i_lo = mo.Constraint(m.idxs, rule=share_diff_lo_rule,
                                    doc='income share within 20% from past')
+        if with_direction:
+            m.i_dir = mo.Constraint(m.idxs, rule=income_direction_rule,
+                                    doc='income must track with national values')
+            m.t_dir = mo.Constraint(m.idxs, rule=theil_direction_rule,
+                                    doc='theil must track with national values')
         # Objective
         m.obj = mo.Objective(rule=theil_total_sum_obj, sense=mo.minimize)
         return self
@@ -290,13 +313,14 @@ class Runner(object):
     ```
     """
 
-    def __init__(self, natdata, subdata, model, empirical=False):
+    def __init__(self, natdata, subdata, model, constructor_kwargs={}, model_kwargs={}):
         self.natdata = natdata.copy()
         self.subdata = subdata.copy()
         self._orig_idx = subdata.index
         self._result = subdata.copy().sort_index()
         self.Model = model
-        self.empirical = empirical
+        self.constructor_kwargs = constructor_kwargs
+        self.model_kwargs = model_kwargs
 
         if natdata.isnull().values.any():
             raise ValueError('Null values found in national data')
@@ -320,11 +344,11 @@ class Runner(object):
         self._result.loc[idx, 'i'] = df['i'].values
         self._result.loc[idx, 'gini'] = df['gini'].values
 
-    def make_model(self, t1, t2, *args, **kwargs):
+    def make_model(self, t1, t2):
         self.solve_t = t2
         ndf, sdf = self._data(t1, t2)
-        self.model = self.Model(ndf, sdf, empirical=self.empirical)
-        self.model.construct(*args, **kwargs)
+        self.model = self.Model(ndf, sdf, **self.constructor_kwargs)
+        self.model.construct(**self.model_kwargs)
         return self
 
     def solve(self, *args, **kwargs):
