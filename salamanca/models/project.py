@@ -117,10 +117,10 @@ def income_direction_rule(m, idx):
 
 def theil_direction_rule(m, idx):
     dT = m.data['T'] - m.data['T_old']
-    if dT <= 0:
-        return m.t[idx] <= m.data['t'][idx]
+    if dT >= 0:
+        return m.t[idx] >= m.data['t'][idx]
     else:
-        return m.t[idx] > m.data['t'][idx]
+        return m.t[idx] <= m.data['t'][idx]
 
 #
 # Objectives
