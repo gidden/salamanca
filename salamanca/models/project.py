@@ -1,5 +1,6 @@
 from __future__ import division
 
+import copy
 import itertools
 import math
 
@@ -350,8 +351,11 @@ class Runner(object):
     def make_model(self, t1, t2):
         self.solve_t = t2
         ndf, sdf = self._data(t1, t2)
-        self.model = self.Model(ndf, sdf, **self.constructor_kwargs)
-        self.model.construct(**self.model_kwargs)
+        # explicitly copies so pop can be used
+        kwargs = copy.deepcopy(self.constructor_kwargs)
+        self.model = self.Model(ndf, sdf, **kwargs)
+        kwargs = copy.deepcopy(self.model_kwargs)
+        self.model.construct(**kwargs)
         return self
 
     def solve(self, *args, **kwargs):
