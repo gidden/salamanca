@@ -116,7 +116,7 @@ def test_Model1_result():
 def test_Model1_diffusion_result():
     natdata, subdata = data()
     model = Model1(natdata, subdata)
-    diffusion = {'income': True, 'theil': True}
+    diffusion = {'share': True, 'theil': True}
     model.construct(diffusion=diffusion)
     model.solve()
     df = model.result()

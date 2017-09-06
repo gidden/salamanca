@@ -286,10 +286,23 @@ class Model1(Model):
             b = 0.2 if b is True else b
             m.i_hi = mo.Constraint(
                 m.idxs,
+                rule=lambda m, idx: income_diff_hi_rule(m, idx, b),
+                doc='income within 20% from past',
+            )
+            m.i_lo = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: income_diff_lo_rule(m, idx, b),
+                doc='income within 20% from past',
+            )
+        b = diffusion.pop('share', False)
+        if b:
+            b = 0.2 if b is True else b
+            m.s_hi = mo.Constraint(
+                m.idxs,
                 rule=lambda m, idx: share_diff_hi_rule(m, idx, b),
                 doc='income share within 20% from past',
             )
-            m.i_lo = mo.Constraint(
+            m.s_lo = mo.Constraint(
                 m.idxs,
                 rule=lambda m, idx: share_diff_lo_rule(m, idx, b),
                 doc='income share within 20% from past',
