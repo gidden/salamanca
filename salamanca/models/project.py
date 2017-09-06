@@ -42,7 +42,7 @@ def threshold_hi_rule(m, f=1.0, b=1.05, relative=True):
     return lhs <= b * rhs
 
 
-def theil_diff_hi_rule(m, idx, b=0.2):
+def theil_diff_hi_rule(m, idx, b):
     """
     \frac{t^{t+1} - t^t}{t^{t}} \geq -0.1
 
@@ -51,7 +51,7 @@ def theil_diff_hi_rule(m, idx, b=0.2):
     return m.t[idx] >= (1 - b) * m.data['t'][idx]
 
 
-def theil_diff_lo_rule(m, idx, b=0.2):
+def theil_diff_lo_rule(m, idx, b):
     """
     \frac{t^{t+1} - t^t}{t^{t}} \leq 0.1
 
@@ -60,7 +60,7 @@ def theil_diff_lo_rule(m, idx, b=0.2):
     return m.t[idx] <= (1 + b) * m.data['t'][idx]
 
 
-def income_diff_hi_rule(m, idx, b=0.2):
+def income_diff_hi_rule(m, idx, b):
     """
     \frac{\iota^{t+1} - \iota^t}{\iota^{t}} \geq -0.2
 
@@ -71,7 +71,7 @@ def income_diff_hi_rule(m, idx, b=0.2):
     return m.i[idx] >= (1 - b) * m.data['i'][idx] * m.data['I'] / m.data['I_old']
 
 
-def income_diff_lo_rule(m, idx, b=0.2):
+def income_diff_lo_rule(m, idx, b):
     """
     \frac{\iota^{t+1} - \iota^t}{\iota^{t}} \leq 0.2
 
@@ -82,7 +82,7 @@ def income_diff_lo_rule(m, idx, b=0.2):
     return m.i[idx] <= (1 + b) * m.data['i'][idx] * m.data['I'] / m.data['I_old']
 
 
-def share_diff_hi_rule(m, idx, b=0.2):
+def share_diff_hi_rule(m, idx, b):
     """
     \frac{s^{t+1} - s^t}{s^{t}} \geq -0.2
 
@@ -95,7 +95,7 @@ def share_diff_hi_rule(m, idx, b=0.2):
     return lhs >= (1 - b) * rhs
 
 
-def share_diff_lo_rule(m, idx, b=0.2):
+def share_diff_lo_rule(m, idx, b):
     """
     \frac{s^{t+1} - s^t}{s^{t}} \leq 0.2
 
@@ -281,22 +281,48 @@ class Model1(Model):
         m.cdf_hi = mo.Constraint(rule=threshold_hi_rule,
                                  doc='Population under threshold within 5%')
         # optional constraints
-        if diffusion.pop('income', False):
-            m.i_hi = mo.Constraint(m.idxs, rule=share_diff_hi_rule,
-                                   doc='income share within 20% from past')
-            m.i_lo = mo.Constraint(m.idxs, rule=share_diff_lo_rule,
-                                   doc='income share within 20% from past')
-        if diffusion.pop('theil', False):
-            m.t_hi = mo.Constraint(m.idxs, rule=theil_diff_hi_rule,
-                                   doc='theil within 10% from past')
-            m.t_lo = mo.Constraint(m.idxs, rule=theil_diff_lo_rule,
-                                   doc='theil within 10% from past')
-        if direction.pop('income', False):
-            m.i_dir = mo.Constraint(m.idxs, rule=income_direction_rule,
-                                    doc='income must track with national values')
-        if direction.pop('theil', False):
-            m.t_dir = mo.Constraint(m.idxs, rule=theil_direction_rule,
-                                    doc='theil must track with national values')
+        b = diffusion.pop('income', False)
+        if b:
+            b = 0.2 if b is True else b
+            m.i_hi = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: share_diff_hi_rule(m, idx, b),
+                doc='income share within 20% from past',
+            )
+            m.i_lo = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: share_diff_lo_rule(m, idx, b),
+                doc='income share within 20% from past',
+            )
+        b = diffusion.pop('theil', False)
+        if b:
+            b = 0.1 if b is True else b
+            m.t_hi = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: theil_diff_hi_rule(m, idx, b),
+                doc='income share within 20% from past',
+            )
+            m.t_lo = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: theil_diff_lo_rule(m, idx, b),
+                doc='income share within 20% from past',
+            )
+        b = direction.pop('income', False)
+        if b:
+            b = 0.2 if b is True else b
+            m.i_dir = mo.Constraint(
+                m.idxs,
+                rule=lambda m: income_direction_rule(m, b),
+                doc='income must track with national values',
+            )
+        b = direction.pop('theil', False)
+        if b:
+            b = 0.2 if b is True else b
+            m.t_dir = mo.Constraint(
+                m.idxs,
+                rule=lambda m: theil_direction_rule(m, b),
+                doc='theil must track with national values',
+            )
         # Objective
         m.obj = mo.Objective(rule=theil_total_sum_obj, sense=mo.minimize)
         return self
