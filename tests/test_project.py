@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from salamanca import ineq
-from salamanca.models.project import Model, Model1
+from salamanca.models.project import Model, Model1, Model2
 from salamanca.models.project import Runner
 
 from pandas.testing import assert_frame_equal
@@ -126,6 +126,39 @@ def test_Model1_diffusion_result():
     exp = pd.DataFrame({
         'i': np.array([8.20987721375, 6.31944406727]),
         'gini': np.array([0.477747557316, 0.285296967258]),
+    }, index=pd.Index(['foo', 'bar'], name='name'))
+    assert_frame_equal(obs, exp)
+
+
+def test_Model2_result():
+    natdata, subdata = data()
+    model = Model2(natdata, subdata)
+    model.construct()
+    model.solve()
+    df = model.result()
+
+    # this is a regression test, results tested 09-06-17
+    obs = df[['gini', 'i']]
+    exp = pd.DataFrame({
+        'i': [7.80113, 6.549360],
+        'gini': [0.348809, 0.347297]
+    }, index=pd.Index(['foo', 'bar'], name='name'))
+    assert_frame_equal(obs, exp)
+
+
+def test_Model2_diffusion_result():
+    natdata, subdata = data()
+    model = Model2(natdata, subdata)
+    diffusion = {'theil': True}
+    model.construct(diffusion=diffusion, theil_within=0.1)
+    model.solve()
+    df = model.result()
+
+    # this is a regression test, results tested 09-06-17
+    obs = df[['gini', 'i']]
+    exp = pd.DataFrame({
+        'i': [6.39826598759, 7.33847538198],
+        'gini': [0.47774761513, 0.285297024826]
     }, index=pd.Index(['foo', 'bar'], name='name'))
     assert_frame_equal(obs, exp)
 

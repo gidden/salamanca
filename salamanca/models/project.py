@@ -24,22 +24,34 @@ def gdp_sum_rule(m):
     return sum(m.data['n_frac'][idx] * m.i[idx] for idx in m.idxs) == m.data['I']
 
 
-def threshold_lo_rule(m, f=1.0, b=0.95, relative=True):
+def theil_lo_rule(m, b=0.05):
+    lhs = model_T_b(m) + model_T_w(m, income_from_data=False)
+    rhs = m.data['T']
+    return lhs >= (1 - b) * rhs
+
+
+def theil_hi_rule(m, b=0.05):
+    lhs = model_T_b(m) + model_T_w(m, income_from_data=False)
+    rhs = m.data['T']
+    return lhs <= (1 + b) * rhs
+
+
+def threshold_lo_rule(m, f=1.0, b=0.05, relative=True):
     i = m.data['I']
     x = f * i if relative else f
     rhs = below_threshold(x, i, m.data['T'])
     lhs = sum(m.data['n_frac'][idx] * below_threshold(x, m.i[idx], m.t[idx])
               for idx in m.idxs)
-    return lhs >= b * rhs
+    return lhs >= (1 - b) * rhs
 
 
-def threshold_hi_rule(m, f=1.0, b=1.05, relative=True):
+def threshold_hi_rule(m, f=1.0, b=0.05, relative=True):
     i = m.data['I']
     x = f * i if relative else f
     rhs = below_threshold(x, i, m.data['T'])
     lhs = sum(m.data['n_frac'][idx] * below_threshold(x, m.i[idx], m.t[idx])
               for idx in m.idxs)
-    return lhs <= b * rhs
+    return lhs <= (1 + b) * rhs
 
 
 def theil_diff_hi_rule(m, idx, b):
@@ -132,6 +144,15 @@ def theil_total_sum_obj(m):
     T_b = model_T_b(m)
     T_w = model_T_w(m, income_from_data=False)
     return (m.data['T'] - T_b - T_w) ** 2
+
+
+def population_below_obj(m, f=1.0, relative=True):
+    i = m.data['I']
+    x = f * i if relative else f
+    p_nat = below_threshold(x, i, m.data['T'])
+    p_sum = sum(m.data['n_frac'][idx] * below_threshold(x, m.i[idx], m.t[idx])
+                for idx in m.idxs)
+    return (p_nat - p_sum) ** 2
 
 
 class Model(object):
@@ -256,10 +277,12 @@ class Model1(Model):
     - GDP sum
     - constrained CDF
 
-    with optionally (assuming 10 year time steps):
+    with optionally (assuming equally spaced time steps):
 
-    - maximum theil diffusion of 1% per year
-    - maximum income share diffusion of 2% per year
+    - maximum theil diffusion % per year
+    - maximum income share diffusion % per year
+    - incomes track with national income
+    - theils track with national theil
     """
 
     def construct(self, diffusion={}, direction={}):
@@ -334,6 +357,104 @@ class Model1(Model):
             )
         # Objective
         m.obj = mo.Objective(rule=theil_total_sum_obj, sense=mo.minimize)
+        return self
+
+
+class Model2(Model):
+    """
+    Minimize L2 norm of population under income threshold subject to:
+
+    - GDP sum
+    - constrained Theil
+
+
+    with optionally (assuming equally spaced time steps):
+
+    - maximum theil diffusion % per year
+    - maximum income share diffusion % per year
+    - incomes track with national income
+    - theils track with national theil
+    """
+
+    def construct(self, diffusion={}, direction={},
+                  theil_within=0.05, threshold=1.0):
+        self.model = m = mo.ConcreteModel()
+        # Model Data
+        m.data = self.model_data
+        # Sets
+        m.idxs = mo.Set(initialize=m.data['idxs'])
+        # Variables
+        m.i = mo.Var(m.idxs, within=mo.PositiveReals,
+                     bounds=(m.data['i_min'], m.data['i_max']))
+        m.t = mo.Var(m.idxs, within=mo.PositiveReals,
+                     bounds=(m.data['t_min'], m.data['t_max']))
+        # Constraints
+        m.gdp_sum = mo.Constraint(rule=gdp_sum_rule, doc='gdp sum = gdp')
+        m.theil_lo = mo.Constraint(
+            rule=lambda m: theil_lo_rule(m, b=theil_within),
+            doc='Theil within 5%'
+        )
+        m.theil_hi = mo.Constraint(
+            rule=lambda m: theil_hi_rule(m, b=theil_within),
+            doc='Theil within 5%'
+        )
+        # optional constraints
+        b = diffusion.pop('income', False)
+        if b:
+            b = 0.2 if b is True else b
+            m.i_hi = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: income_diff_hi_rule(m, idx, b),
+                doc='income within 20% from past',
+            )
+            m.i_lo = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: income_diff_lo_rule(m, idx, b),
+                doc='income within 20% from past',
+            )
+        b = diffusion.pop('share', False)
+        if b:
+            b = 0.2 if b is True else b
+            m.s_hi = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: share_diff_hi_rule(m, idx, b),
+                doc='income share within 20% from past',
+            )
+            m.s_lo = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: share_diff_lo_rule(m, idx, b),
+                doc='income share within 20% from past',
+            )
+        b = diffusion.pop('theil', False)
+        if b:
+            b = 0.1 if b is True else b
+            m.t_hi = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: theil_diff_hi_rule(m, idx, b),
+                doc='income share within 20% from past',
+            )
+            m.t_lo = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: theil_diff_lo_rule(m, idx, b),
+                doc='income share within 20% from past',
+            )
+        if direction.pop('income', False):
+            m.i_dir = mo.Constraint(
+                m.idxs,
+                rule=income_direction_rule,
+                doc='income must track with national values',
+            )
+        if direction.pop('theil', False):
+            m.t_dir = mo.Constraint(
+                m.idxs,
+                rule=theil_direction_rule,
+                doc='theil must track with national values',
+            )
+        # Objective
+        m.obj = mo.Objective(
+            rule=lambda m: population_below_obj(m, f=threshold),
+            sense=mo.minimize
+        )
         return self
 
 
