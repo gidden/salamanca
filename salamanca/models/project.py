@@ -42,25 +42,25 @@ def threshold_hi_rule(m, f=1.0, b=1.05, relative=True):
     return lhs <= b * rhs
 
 
-def theil_diff_hi_rule(m, idx, b=0.9):
+def theil_diff_hi_rule(m, idx, b=0.2):
     """
     \frac{t^{t+1} - t^t}{t^{t}} \geq -0.1
 
     @TODO: is 10% in 10 years (or other timeperiod) reasonable?
     """
-    return m.t[idx] >= b * m.data['t'][idx]
+    return m.t[idx] >= (1 - b) * m.data['t'][idx]
 
 
-def theil_diff_lo_rule(m, idx, b=1.1):
+def theil_diff_lo_rule(m, idx, b=0.2):
     """
     \frac{t^{t+1} - t^t}{t^{t}} \leq 0.1
 
     @TODO: is 10% in 10 years (or other timeperiod) reasonable?
     """
-    return m.t[idx] <= b * m.data['t'][idx]
+    return m.t[idx] <= (1 + b) * m.data['t'][idx]
 
 
-def income_diff_hi_rule(m, idx, b=0.8):
+def income_diff_hi_rule(m, idx, b=0.2):
     """
     \frac{\iota^{t+1} - \iota^t}{\iota^{t}} \geq -0.2
 
@@ -68,10 +68,10 @@ def income_diff_hi_rule(m, idx, b=0.8):
 
     @TODO: is 20% in 10 years (or other timeperiod) reasonable?
     """
-    return m.i[idx] >= b * m.data['i'][idx] * m.data['I'] / m.data['I_old']
+    return m.i[idx] >= (1 - b) * m.data['i'][idx] * m.data['I'] / m.data['I_old']
 
 
-def income_diff_lo_rule(m, idx, b=1.2):
+def income_diff_lo_rule(m, idx, b=0.2):
     """
     \frac{\iota^{t+1} - \iota^t}{\iota^{t}} \leq 0.2
 
@@ -79,10 +79,10 @@ def income_diff_lo_rule(m, idx, b=1.2):
 
     @TODO: is 20% in 10 years (or other timeperiod) reasonable?
     """
-    return m.i[idx] <= b * m.data['i'][idx] * m.data['I'] / m.data['I_old']
+    return m.i[idx] <= (1 + b) * m.data['i'][idx] * m.data['I'] / m.data['I_old']
 
 
-def share_diff_hi_rule(m, idx, b=0.8):
+def share_diff_hi_rule(m, idx, b=0.2):
     """
     \frac{s^{t+1} - s^t}{s^{t}} \geq -0.2
 
@@ -92,10 +92,10 @@ def share_diff_hi_rule(m, idx, b=0.8):
     """
     lhs = m.i[idx] * m.data['n_frac'][idx] / m.data['I']
     rhs = m.data['i'][idx] * m.data['n_frac_old'][idx] / m.data['I_old']
-    return lhs >= b * rhs
+    return lhs >= (1 - b) * rhs
 
 
-def share_diff_lo_rule(m, idx, b=1.2):
+def share_diff_lo_rule(m, idx, b=0.2):
     """
     \frac{s^{t+1} - s^t}{s^{t}} \leq 0.2
 
@@ -105,7 +105,7 @@ def share_diff_lo_rule(m, idx, b=1.2):
     """
     lhs = m.i[idx] * m.data['n_frac'][idx] / m.data['I']
     rhs = m.data['i'][idx] * m.data['n_frac_old'][idx] / m.data['I_old']
-    return lhs <= b * rhs
+    return lhs <= (1 + b) * rhs
 
 
 def income_direction_rule(m, idx):
