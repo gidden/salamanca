@@ -307,20 +307,16 @@ class Model1(Model):
                 rule=lambda m, idx: theil_diff_lo_rule(m, idx, b),
                 doc='income share within 20% from past',
             )
-        b = direction.pop('income', False)
-        if b:
-            b = 0.2 if b is True else b
+        if direction.pop('income', False):
             m.i_dir = mo.Constraint(
                 m.idxs,
-                rule=lambda m: income_direction_rule(m, b),
+                rule=income_direction_rule,
                 doc='income must track with national values',
             )
-        b = direction.pop('theil', False)
-        if b:
-            b = 0.2 if b is True else b
+        if direction.pop('theil', False):
             m.t_dir = mo.Constraint(
                 m.idxs,
-                rule=lambda m: theil_direction_rule(m, b),
+                rule=theil_direction_rule,
                 doc='theil must track with national values',
             )
         # Objective
