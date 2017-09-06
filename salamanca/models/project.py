@@ -261,7 +261,7 @@ class Model1(Model):
     - maximum income share diffusion of 2% per year
     """
 
-    def construct(self, with_diffusion=False, with_direction=False):
+    def construct(self, diffusion={}, direction={}):
         self.model = m = mo.ConcreteModel()
         # Model Data
         m.data = self.model_data
@@ -279,18 +279,21 @@ class Model1(Model):
                                  doc='Population under threshold within 5%')
         m.cdf_hi = mo.Constraint(rule=threshold_hi_rule,
                                  doc='Population under threshold within 5%')
-        if with_diffusion:
-            m.t_hi = mo.Constraint(m.idxs, rule=theil_diff_hi_rule,
-                                   doc='theil within 10% from past')
-            m.t_lo = mo.Constraint(m.idxs, rule=theil_diff_lo_rule,
-                                   doc='theil within 10% from past')
+        # optional constraints
+        if diffusion.pop('income', False):
             m.i_hi = mo.Constraint(m.idxs, rule=share_diff_hi_rule,
                                    doc='income share within 20% from past')
             m.i_lo = mo.Constraint(m.idxs, rule=share_diff_lo_rule,
                                    doc='income share within 20% from past')
-        if with_direction:
+        if diffusion.pop('theil', False):
+            m.t_hi = mo.Constraint(m.idxs, rule=theil_diff_hi_rule,
+                                   doc='theil within 10% from past')
+            m.t_lo = mo.Constraint(m.idxs, rule=theil_diff_lo_rule,
+                                   doc='theil within 10% from past')
+        if direction.pop('income', False):
             m.i_dir = mo.Constraint(m.idxs, rule=income_direction_rule,
                                     doc='income must track with national values')
+        if direction.pop('theil', False):
             m.t_dir = mo.Constraint(m.idxs, rule=theil_direction_rule,
                                     doc='theil must track with national values')
         # Objective
