@@ -10,7 +10,7 @@ import pyomo.environ as mo
 
 
 from salamanca import ineq
-from salamanca.models.utils import below_threshold, model_T_b, model_T_w
+from salamanca.models.utils import below_threshold, model_T_b, model_T_w, i_std
 
 # quiet pandas setwithcopy warnings
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -120,6 +120,24 @@ def share_diff_lo_rule(m, idx, b):
     return lhs <= (1 + b) * rhs
 
 
+def std_diff(m, b=0.2):
+    rhs = i_std(m, from_data=True)
+    lhs = i_std(m, from_data=False)
+    return abs((rhs - lhs) / rhs) <= b
+
+
+def std_diff_hi(m, b=0.5):
+    rhs = i_std(m, from_data=True)
+    lhs = i_std(m, from_data=False)
+    return lhs >= (1 - b) * rhs
+
+
+def std_diff_lo(m, b=0.5):
+    rhs = i_std(m, from_data=True)
+    lhs = i_std(m, from_data=False)
+    return lhs <= (1 - b) * rhs
+
+
 def income_direction_rule(m, idx):
     dI = m.data['I_new'] - m.data['I_old']
     if dI >= 0:
@@ -134,6 +152,13 @@ def theil_direction_rule(m, idx):
         return m.t[idx] >= m.data['t'][idx]
     else:
         return m.t[idx] <= m.data['t'][idx]
+
+
+def between_theil_direction_rule(m):
+    dT = m.data['T'] - m.data['T_old']
+    newTb = model_T_b(m, from_data=False)
+    oldTb = model_T_b(m, from_data=True)
+    return newTb >= oldTb if dT >= 0 else newTb <= oldTb
 
 #
 # Objectives
@@ -291,7 +316,7 @@ class Model1(Model):
     - theils track with national theil
     """
 
-    def construct(self, diffusion={}, direction={}):
+    def construct(self, diffusion={}, direction={}, spread={}):
         self.model = m = mo.ConcreteModel()
         # Model Data
         m.data = self.model_data
@@ -361,6 +386,13 @@ class Model1(Model):
                 rule=theil_direction_rule,
                 doc='theil must track with national values',
             )
+        if 'std' in spread:
+            b = 0.2 if spread['std'] is True else spread['std']
+            m.i_std = mo.Constraint(rule=lambda m: std_diff(m, b=b), doc='')
+        if 'between_theil' in spread:
+            m.T_b_dir = mo.Constraint(
+                rule=between_theil_direction_rule, doc='')
+
         # Objective
         m.obj = mo.Objective(rule=theil_total_sum_obj, sense=mo.minimize)
         return self
@@ -496,6 +528,9 @@ class Model3(Model):
                      bounds=(m.data['t_min'], m.data['t_max']))
         # Constraints
         m.gdp_sum = mo.Constraint(rule=gdp_sum_rule, doc='gdp sum = gdp')
+        # m.i_std = mo.Constraint(rule=std_diff, doc='')
+        # m.i_std_lo = mo.Constraint(rule=std_diff_lo, doc='')
+        # m.i_std_hi = mo.Constraint(rule=std_diff_hi, doc='')
         # optional constraints
         b = diffusion.pop('income', False)
         if b:

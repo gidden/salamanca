@@ -50,10 +50,20 @@ def model_T_w(m, income_from_data=True):
     return T_w
 
 
-def model_T_b(m):
+def model_T_b(m, from_data=False):
+    i = m.data['i'] if from_data else m.i
+    I = m.data['I_old'] if from_data else m.data['I']
+    nfracs = m.data['n_frac_old'] if from_data else m.data['n_frac']
+
     def _t_b(m, idx):
-        ifrac = m.i[idx] / m.data['I']
-        nfrac = m.data['n_frac'][idx]
+        ifrac = i[idx] / I
+        nfrac = nfracs[idx]
         return nfrac * ifrac * mo.log(ifrac)
     T_b = sum(_t_b(m, idx) for idx in m.idxs)
     return T_b
+
+
+def i_std(m, from_data=True):
+    i = m.data['i'] / m.data['I_old'] if from_data else m.i
+    mu = sum(i[idx] for idx in m.idxs) / len(m.idxs)
+    return sum((i[idx] - mu) ** 2 for idx in m.idxs) / len(m.idxs)
