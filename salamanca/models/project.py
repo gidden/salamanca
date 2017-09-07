@@ -120,22 +120,16 @@ def share_diff_lo_rule(m, idx, b):
     return lhs <= (1 + b) * rhs
 
 
-def std_diff(m, b=0.2):
-    rhs = i_std(m, from_data=True)
-    lhs = i_std(m, from_data=False)
-    return abs((rhs - lhs) / rhs) <= b
-
-
-def std_diff_hi(m, b=0.5):
+def std_diff_hi(m, b=0.2):
     rhs = i_std(m, from_data=True)
     lhs = i_std(m, from_data=False)
     return lhs >= (1 - b) * rhs
 
 
-def std_diff_lo(m, b=0.5):
+def std_diff_lo(m, b=0.2):
     rhs = i_std(m, from_data=True)
     lhs = i_std(m, from_data=False)
-    return lhs <= (1 - b) * rhs
+    return lhs <= (1 + b) * rhs
 
 
 def income_direction_rule(m, idx):
@@ -178,6 +172,23 @@ def population_below_obj(m, f=1.0, relative=True):
     p_sum = sum(m.data['n_frac'][idx] * below_threshold(x, m.i[idx], m.t[idx])
                 for idx in m.idxs)
     return (p_nat - p_sum) ** 2
+
+
+def combined_obj2(m, theil_weight=1.0, pop_weight=1.0, f=1.0):
+    # theil contrib
+    T_b = model_T_b(m)
+    T_w = model_T_w(m, income_from_data=False)
+    dT = (1 - (T_b + T_w) / m.data['T']) ** 2
+
+    # pop contrib
+    i = m.data['I']
+    x = f * i
+    p_nat = below_threshold(x, i, m.data['T'])
+    p_sum = sum(m.data['n_frac'][idx] * below_threshold(x, m.i[idx], m.t[idx])
+                for idx in m.idxs)
+    dP = (1 - p_sum / p_nat) ** 2
+
+    return theil_weight * dT + pop_weight * dP
 
 
 def combined_obj(m, theil_weight=1.0, pop_weight=1.0, **pop_kwargs):
@@ -388,7 +399,10 @@ class Model1(Model):
             )
         if 'std' in spread:
             b = 0.2 if spread['std'] is True else spread['std']
-            m.i_std = mo.Constraint(rule=lambda m: std_diff(m, b=b), doc='')
+            m.i_std_hi = mo.Constraint(
+                rule=lambda m: std_diff_hi(m, b=b), doc='')
+            m.i_std_lo = mo.Constraint(
+                rule=lambda m: std_diff_lo(m, b=b), doc='')
         if 'between_theil' in spread:
             m.T_b_dir = mo.Constraint(
                 rule=between_theil_direction_rule, doc='')
@@ -490,7 +504,10 @@ class Model2(Model):
             )
         if 'std' in spread:
             b = 0.2 if spread['std'] is True else spread['std']
-            m.i_std = mo.Constraint(rule=lambda m: std_diff(m, b=b), doc='')
+            m.i_std_hi = mo.Constraint(
+                rule=lambda m: std_diff_hi(m, b=b), doc='')
+            m.i_std_lo = mo.Constraint(
+                rule=lambda m: std_diff_lo(m, b=b), doc='')
         if 'between_theil' in spread:
             m.T_b_dir = mo.Constraint(
                 rule=between_theil_direction_rule, doc='')
@@ -588,7 +605,10 @@ class Model3(Model):
             )
         if 'std' in spread:
             b = 0.2 if spread['std'] is True else spread['std']
-            m.i_std = mo.Constraint(rule=lambda m: std_diff(m, b=b), doc='')
+            m.i_std_hi = mo.Constraint(
+                rule=lambda m: std_diff_hi(m, b=b), doc='')
+            m.i_std_lo = mo.Constraint(
+                rule=lambda m: std_diff_lo(m, b=b), doc='')
         if 'between_theil' in spread:
             m.T_b_dir = mo.Constraint(
                 rule=between_theil_direction_rule, doc='')
