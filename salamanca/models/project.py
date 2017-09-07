@@ -316,7 +316,7 @@ class Model1(Model):
     - theils track with national theil
     """
 
-    def construct(self, diffusion={}, direction={}, spread={}):
+    def construct(self, diffusion={}, direction={}, spread={}, threshold=1.0):
         self.model = m = mo.ConcreteModel()
         # Model Data
         m.data = self.model_data
@@ -414,8 +414,8 @@ class Model2(Model):
     - theils track with national theil
     """
 
-    def construct(self, diffusion={}, direction={},
-                  theil_within=0.05, threshold=1.0):
+    def construct(self, diffusion={}, direction={}, spread={}, threshold=1.0,
+                  theil_within=0.05):
         self.model = m = mo.ConcreteModel()
         # Model Data
         m.data = self.model_data
@@ -488,6 +488,12 @@ class Model2(Model):
                 rule=theil_direction_rule,
                 doc='theil must track with national values',
             )
+        if 'std' in spread:
+            b = 0.2 if spread['std'] is True else spread['std']
+            m.i_std = mo.Constraint(rule=lambda m: std_diff(m, b=b), doc='')
+        if 'between_theil' in spread:
+            m.T_b_dir = mo.Constraint(
+                rule=between_theil_direction_rule, doc='')
         # Objective
         m.obj = mo.Objective(
             rule=lambda m: population_below_obj(m, f=threshold),
@@ -514,8 +520,8 @@ class Model3(Model):
     - theils track with national theil
     """
 
-    def construct(self, diffusion={}, direction={},
-                  pop_weight=1.0, theil_weight=1.0, threshold=1.0):
+    def construct(self, diffusion={}, direction={}, spread={}, threshold=1.0,
+                  pop_weight=1.0, theil_weight=1.0):
         self.model = m = mo.ConcreteModel()
         # Model Data
         m.data = self.model_data
@@ -528,9 +534,6 @@ class Model3(Model):
                      bounds=(m.data['t_min'], m.data['t_max']))
         # Constraints
         m.gdp_sum = mo.Constraint(rule=gdp_sum_rule, doc='gdp sum = gdp')
-        # m.i_std = mo.Constraint(rule=std_diff, doc='')
-        # m.i_std_lo = mo.Constraint(rule=std_diff_lo, doc='')
-        # m.i_std_hi = mo.Constraint(rule=std_diff_hi, doc='')
         # optional constraints
         b = diffusion.pop('income', False)
         if b:
@@ -583,6 +586,12 @@ class Model3(Model):
                 rule=theil_direction_rule,
                 doc='theil must track with national values',
             )
+        if 'std' in spread:
+            b = 0.2 if spread['std'] is True else spread['std']
+            m.i_std = mo.Constraint(rule=lambda m: std_diff(m, b=b), doc='')
+        if 'between_theil' in spread:
+            m.T_b_dir = mo.Constraint(
+                rule=between_theil_direction_rule, doc='')
         # Objective
         m.obj = mo.Objective(
             rule=lambda m: combined_obj(m, theil_weight=theil_weight,
