@@ -614,8 +614,8 @@ class Model3(Model):
                 rule=between_theil_direction_rule, doc='')
         # Objective
         m.obj = mo.Objective(
-            rule=lambda m: combined_obj(m, theil_weight=theil_weight,
-                                        pop_weight=pop_weight, f=threshold),
+            rule=lambda m: combined_obj2(m, theil_weight=theil_weight,
+                                         pop_weight=pop_weight, f=threshold),
             sense=mo.minimize
         )
         return self
