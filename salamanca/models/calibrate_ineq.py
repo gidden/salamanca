@@ -364,6 +364,10 @@ class Model5(Model):
         m.theil_sum = mo.Constraint(rule=theil_sum_rule, doc='')
         m.spacing = mo.Constraint(m.idxs, rule=spacing_rule,
                                   doc='')
+        m.std_lo = mo.Constraint(m.idxs, rule=std_diff_lo_rule,
+                                 doc='')
+        m.std_hi = mo.Constraint(m.idxs, rule=std_diff_hi_rule,
+                                 doc='')
         # Objective
         m.obj = mo.Objective(rule=l2_norm_obj, sense=mo.minimize)
         return self
