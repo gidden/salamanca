@@ -9,7 +9,7 @@ import pyomo.environ as mo
 
 
 from salamanca import ineq
-from salamanca.models.utils import below_threshold, model_T_w
+from salamanca.models.utils import below_threshold, model_T_w, t_std
 
 
 #
@@ -27,25 +27,26 @@ def position_rule(m, idx):
     return m.t[idx] >= m.t[idx - 1]
 
 
-def diff_hi_rule(m, idx, b=0.8):
+def diff_hi_rule(m, idx, b=0.2):
     r"""|diff_hi|
 
     .. |diff_hi| replace:: :math:`t_r - t_{r-1} \geq 0.8 (t^*_r - t^*_{r-1}) \forall r \in {r_2 \ldots r_N}`
     """
     if idx == 0:
         return mo.Constraint.Skip
-    return m.t[idx] - m.t[idx - 1] >= b * (m.data['t'][idx] - m.data['t'][idx - 1])
+    return m.t[idx] - m.t[idx - 1] >= (1 - b) * (m.data['t'][idx] - m.data['t'][idx - 1])
 
 
-def diff_lo_rule(m, idx, b=1.2):
+def diff_lo_rule(m, idx, b=0.2):
     if idx == 0:
         return mo.Constraint.Skip
-    return m.t[idx] - m.t[idx - 1] <= b * (m.data['t'][idx] - m.data['t'][idx - 1])
+    return m.t[idx] - m.t[idx - 1] <= (1 + b) * (m.data['t'][idx] - m.data['t'][idx - 1])
 
 
-def theil_sum_rule(m):
-    return sum(m.t[idx] * m.data['g'][idx] for idx in m.idxs) == \
-        m.data['T_w'] * m.data['G']
+def spacing_rule(m, idx):
+    if idx == 0:
+        return mo.Constraint.Skip
+    return m.t[idx] - m.t[idx - 1] >= 0.5 * (m.data['t'][idx] - m.data['t'][idx - 1])
 
 
 def threshold_lo_rule(m, idx, f=1.0, b=0.9, relative=True):
@@ -62,6 +63,23 @@ def threshold_hi_rule(m, idx, f=1.0, b=1.1, relative=True):
     rhs = below_threshold(x, i, m.data['t'][idx])
     lhs = below_threshold(x, i, m.t[idx])
     return lhs <= b * rhs
+
+
+def theil_sum_rule(m):
+    return sum(m.t[idx] * m.data['g'][idx] for idx in m.idxs) == \
+        m.data['T_w'] * m.data['G']
+
+
+def std_diff_hi_rule(m, b=0.1):
+    rhs = t_std(m, from_data=True)
+    lhs = t_std(m, from_data=False)
+    return lhs >= (1 - b) * rhs
+
+
+def std_diff_lo_rule(m, b=0.1):
+    rhs = t_std(m, from_data=True)
+    lhs = t_std(m, from_data=False)
+    return lhs <= (1 + b) * rhs
 
 #
 # Objectives
@@ -319,4 +337,33 @@ class Model4b(Model):
         weights = [2, 1]
         rule = lambda m: threshold_obj(m, factors=factors, weights=weights)
         m.obj = mo.Objective(rule=rule, sense=mo.minimize)
+        return self
+
+
+class Model5(Model):
+    """
+    Minimize L2-norm under position and constrainted CDF (relative income) and Theil sum.
+    """
+
+    def construct(self):
+        self.model = m = mo.ConcreteModel()
+        # Model Data
+        m.data = self.model_data
+        # Sets
+        m.idxs = mo.Set(initialize=m.data['idxs'])
+        # Variables
+        m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
+                     bounds=(0, ineq.MAX_THEIL))
+        # Constraints
+        m.position = mo.Constraint(m.idxs, rule=position_rule,
+                                   doc='ordering between provinces must be maintained')
+        m.thresh_hi = mo.Constraint(m.idxs, rule=threshold_hi_rule,
+                                    doc='')
+        m.thresh_lo = mo.Constraint(m.idxs, rule=threshold_lo_rule,
+                                    doc='')
+        m.theil_sum = mo.Constraint(rule=theil_sum_rule, doc='')
+        m.spacing = mo.Constraint(m.idxs, rule=spacing_rule,
+                                  doc='')
+        # Objective
+        m.obj = mo.Objective(rule=l2_norm_obj, sense=mo.minimize)
         return self

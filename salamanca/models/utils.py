@@ -67,3 +67,9 @@ def i_std(m, from_data=True):
     i = m.data['i'] / m.data['I_old'] if from_data else m.i
     mu = sum(i[idx] for idx in m.idxs) / len(m.idxs)
     return sum((i[idx] - mu) ** 2 for idx in m.idxs) / len(m.idxs)
+
+
+def t_std(m, from_data=True):
+    t = m.data['t'] if from_data else m.t
+    mu = sum(t[idx] for idx in m.idxs) / len(m.idxs)
+    return sum((t[idx] - mu) ** 2 for idx in m.idxs) / len(m.idxs)
