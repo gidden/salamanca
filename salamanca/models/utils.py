@@ -7,6 +7,9 @@ import pyomo.environ as mo
 # Pyomo-enabled helper functions
 #
 
+def tanh(x):
+    return (mo.exp(x) - mo.exp(-x)) / (mo.exp(x) + mo.exp(-x))
+
 
 def below_threshold(x, i, t, mean=True):
     """Compute the CDF of the lognormal distribution at x using an approximation of
@@ -39,7 +42,7 @@ def below_threshold(x, i, t, mean=True):
     # coefficient for erf approximation
     k = math.pi ** 0.5 * math.log(2)
     # definition of cdf with tanh(kx) approximating erf(x)
-    return 0.5 + 0.5 * mo.tanh(k * arg)
+    return 0.5 + 0.5 * tanh(k * arg)
 
 
 def model_T_w(m, income_from_data=True):
