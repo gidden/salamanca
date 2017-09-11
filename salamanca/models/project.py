@@ -226,6 +226,86 @@ class Model(object):
         self._setup_model_data(natdata, subdata)
         self._check_model_data()
 
+    def _add_spread_rules(self, spread):
+        m = self.model
+        if 'std' in spread:
+            b = 0.2 if spread['std'] is True else spread['std']
+            m.i_std_hi = mo.Constraint(
+                rule=lambda m: std_diff_hi(m, b=b), doc='')
+            m.i_std_lo = mo.Constraint(
+                rule=lambda m: std_diff_lo(m, b=b), doc='')
+        if 'income_rate' in spread:
+            b_lo = spread['income_rate'].pop('b_lo', 0.5)
+            b_hi = spread['income_rate'].pop('b_hi', 1.5)
+            m.rate_hi = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: income_rate_hi_rule(m, idx, b_hi),
+                doc='')
+            m.rate_lo = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: income_rate_lo_rule(m, idx, b_lo),
+                doc='')
+        if 'between_theil' in spread:
+            m.T_b_dir = mo.Constraint(
+                rule=between_theil_direction_rule, doc='')
+
+    def _add_direction_rules(self, direction):
+        m = self.model
+        if 'income' in direction:
+            m.i_dir = mo.Constraint(
+                m.idxs,
+                rule=income_direction_rule,
+                doc='income must track with national values',
+            )
+        if 'theil' in direction:
+            m.t_dir = mo.Constraint(
+                m.idxs,
+                rule=theil_direction_rule,
+                doc='theil must track with national values',
+            )
+
+    def _add_diffusion_rules(self, diffusion):
+        m = self.model
+        if 'income' in diffusion:
+            b = diffusion['income']
+            b = 0.2 if b is True else b
+            m.i_hi = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: income_diff_hi_rule(m, idx, b),
+                doc='income within 20% from past',
+            )
+            m.i_lo = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: income_diff_lo_rule(m, idx, b),
+                doc='income within 20% from past',
+            )
+        if 'share' in diffusion:
+            b = diffusion['share']
+            b = 0.2 if b is True else b
+            m.s_hi = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: share_diff_hi_rule(m, idx, b),
+                doc='income share within 20% from past',
+            )
+            m.s_lo = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: share_diff_lo_rule(m, idx, b),
+                doc='income share within 20% from past',
+            )
+        if 'theil' in diffusion:
+            b = diffusion['theil']
+            b = 0.1 if b is True else b
+            m.t_hi = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: theil_diff_hi_rule(m, idx, b),
+                doc='income share within 20% from past',
+            )
+            m.t_lo = mo.Constraint(
+                m.idxs,
+                rule=lambda m, idx: theil_diff_lo_rule(m, idx, b),
+                doc='income share within 20% from past',
+            )
+
     def _setup_model_data(self, natdata, subdata):
         required = (n, i, gini) = 'n', 'i', 'gini'
         ndf, sdf = self.natdata.copy(), self.subdata.copy()
@@ -329,6 +409,25 @@ class Model(object):
         df['n_orig'] = self.subdata.loc[self._modelidx][n]
         return df
 
+    def construct(self, diffusion={}, direction={}, spread={}):
+        self.model = m = mo.ConcreteModel()
+        # Model Data
+        m.data = self.model_data
+        # Sets
+        m.idxs = mo.Set(initialize=m.data['idxs'])
+        # Variables
+        m.i = mo.Var(m.idxs, within=mo.PositiveReals,
+                     bounds=(m.data['i_min'], m.data['i_max']))
+        m.t = mo.Var(m.idxs, within=mo.PositiveReals,
+                     bounds=(m.data['t_min'], m.data['t_max']))
+        # Constraints
+        m.gdp_sum = mo.Constraint(rule=gdp_sum_rule,
+                                  doc='gdp sum = gdp')
+        # optional constraints
+        self._add_diffusion_rules(diffusion)
+        self._add_direction_rules(direction)
+        self._add_spread_rules(spread)
+
 
 class Model1(Model):
     """
@@ -345,108 +444,19 @@ class Model1(Model):
     - theils track with national theil
     """
 
-    def _add_spread_rules(self, spread):
-        m = self.model
-        if 'std' in spread:
-            b = 0.2 if spread['std'] is True else spread['std']
-            m.i_std_hi = mo.Constraint(
-                rule=lambda m: std_diff_hi(m, b=b), doc='')
-            m.i_std_lo = mo.Constraint(
-                rule=lambda m: std_diff_lo(m, b=b), doc='')
-        if 'income_rate' in spread:
-            b_lo = spread['income_rate'].pop('b_lo', 0.5)
-            b_hi = spread['income_rate'].pop('b_hi', 1.5)
-            m.rate_hi = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: income_rate_hi_rule(m, idx, b_hi),
-                doc='')
-            m.rate_lo = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: income_rate_lo_rule(m, idx, b_lo),
-                doc='')
-        if 'between_theil' in spread:
-            m.T_b_dir = mo.Constraint(
-                rule=between_theil_direction_rule, doc='')
-
-    def _add_direction_rules(self, direction):
-        m = self.model
-        if 'income' in direction:
-            m.i_dir = mo.Constraint(
-                m.idxs,
-                rule=income_direction_rule,
-                doc='income must track with national values',
-            )
-        if 'theil' in direction:
-            m.t_dir = mo.Constraint(
-                m.idxs,
-                rule=theil_direction_rule,
-                doc='theil must track with national values',
-            )
-
-    def _add_diffusion_rules(self, diffusion):
-        m = self.model
-        if 'income' in diffusion:
-            b = diffusion['income']
-            b = 0.2 if b is True else b
-            m.i_hi = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: income_diff_hi_rule(m, idx, b),
-                doc='income within 20% from past',
-            )
-            m.i_lo = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: income_diff_lo_rule(m, idx, b),
-                doc='income within 20% from past',
-            )
-        if 'share' in diffusion:
-            b = diffusion['share']
-            b = 0.2 if b is True else b
-            m.s_hi = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: share_diff_hi_rule(m, idx, b),
-                doc='income share within 20% from past',
-            )
-            m.s_lo = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: share_diff_lo_rule(m, idx, b),
-                doc='income share within 20% from past',
-            )
-        if 'theil' in diffusion:
-            b = diffusion['theil']
-            b = 0.1 if b is True else b
-            m.t_hi = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: theil_diff_hi_rule(m, idx, b),
-                doc='income share within 20% from past',
-            )
-            m.t_lo = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: theil_diff_lo_rule(m, idx, b),
-                doc='income share within 20% from past',
-            )
-
     def construct(self, diffusion={}, direction={}, spread={}, threshold=1.0):
-        self.model = m = mo.ConcreteModel()
-        # Model Data
-        m.data = self.model_data
-        # Sets
-        m.idxs = mo.Set(initialize=m.data['idxs'])
-        # Variables
-        m.i = mo.Var(m.idxs, within=mo.PositiveReals,
-                     bounds=(m.data['i_min'], m.data['i_max']))
-        m.t = mo.Var(m.idxs, within=mo.PositiveReals,
-                     bounds=(m.data['t_min'], m.data['t_max']))
-        # Constraints
-        m.gdp_sum = mo.Constraint(rule=gdp_sum_rule,
-                                  doc='gdp sum = gdp')
+        # construct base model
+        super(Model1, self).construct(
+            diffusion=diffusion,
+            direction=direction,
+            spread=spread
+        )
+        m = self.model
+        # Constraints specific to this model
         m.cdf_lo = mo.Constraint(rule=threshold_lo_rule,
                                  doc='Population under threshold within 5%')
         m.cdf_hi = mo.Constraint(rule=threshold_hi_rule,
                                  doc='Population under threshold within 5%')
-        # optional constraints
-        self._add_diffusion_rules(diffusion)
-        self._add_direction_rules(direction)
-        self._add_spread_rules(spread)
         # Objective
         m.obj = mo.Objective(rule=theil_total_sum_obj, sense=mo.minimize)
         return self
@@ -470,18 +480,14 @@ class Model2(Model):
 
     def construct(self, diffusion={}, direction={}, spread={}, threshold=1.0,
                   theil_within=0.05):
-        self.model = m = mo.ConcreteModel()
-        # Model Data
-        m.data = self.model_data
-        # Sets
-        m.idxs = mo.Set(initialize=m.data['idxs'])
-        # Variables
-        m.i = mo.Var(m.idxs, within=mo.PositiveReals,
-                     bounds=(m.data['i_min'], m.data['i_max']))
-        m.t = mo.Var(m.idxs, within=mo.PositiveReals,
-                     bounds=(m.data['t_min'], m.data['t_max']))
-        # Constraints
-        m.gdp_sum = mo.Constraint(rule=gdp_sum_rule, doc='gdp sum = gdp')
+        # construct base model
+        super(Model2, self).construct(
+            diffusion=diffusion,
+            direction=direction,
+            spread=spread
+        )
+        m = self.model
+        # Constraints specific to this model
         m.theil_lo = mo.Constraint(
             rule=lambda m: theil_lo_rule(m, b=theil_within),
             doc='Theil within 5%'
@@ -490,67 +496,6 @@ class Model2(Model):
             rule=lambda m: theil_hi_rule(m, b=theil_within),
             doc='Theil within 5%'
         )
-        # optional constraints
-        b = diffusion.pop('income', False)
-        if b:
-            b = 0.2 if b is True else b
-            m.i_hi = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: income_diff_hi_rule(m, idx, b),
-                doc='income within 20% from past',
-            )
-            m.i_lo = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: income_diff_lo_rule(m, idx, b),
-                doc='income within 20% from past',
-            )
-        b = diffusion.pop('share', False)
-        if b:
-            b = 0.2 if b is True else b
-            m.s_hi = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: share_diff_hi_rule(m, idx, b),
-                doc='income share within 20% from past',
-            )
-            m.s_lo = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: share_diff_lo_rule(m, idx, b),
-                doc='income share within 20% from past',
-            )
-        b = diffusion.pop('theil', False)
-        if b:
-            b = 0.1 if b is True else b
-            m.t_hi = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: theil_diff_hi_rule(m, idx, b),
-                doc='income share within 20% from past',
-            )
-            m.t_lo = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: theil_diff_lo_rule(m, idx, b),
-                doc='income share within 20% from past',
-            )
-        if direction.pop('income', False):
-            m.i_dir = mo.Constraint(
-                m.idxs,
-                rule=income_direction_rule,
-                doc='income must track with national values',
-            )
-        if direction.pop('theil', False):
-            m.t_dir = mo.Constraint(
-                m.idxs,
-                rule=theil_direction_rule,
-                doc='theil must track with national values',
-            )
-        if 'std' in spread:
-            b = 0.2 if spread['std'] is True else spread['std']
-            m.i_std_hi = mo.Constraint(
-                rule=lambda m: std_diff_hi(m, b=b), doc='')
-            m.i_std_lo = mo.Constraint(
-                rule=lambda m: std_diff_lo(m, b=b), doc='')
-        if 'between_theil' in spread:
-            m.T_b_dir = mo.Constraint(
-                rule=between_theil_direction_rule, doc='')
         # Objective
         m.obj = mo.Objective(
             rule=lambda m: population_below_obj(m, f=threshold),
@@ -579,83 +524,17 @@ class Model3(Model):
 
     def construct(self, diffusion={}, direction={}, spread={}, threshold=1.0,
                   pop_weight=1.0, theil_weight=1.0):
-        self.model = m = mo.ConcreteModel()
-        # Model Data
-        m.data = self.model_data
-        # Sets
-        m.idxs = mo.Set(initialize=m.data['idxs'])
-        # Variables
-        m.i = mo.Var(m.idxs, within=mo.PositiveReals,
-                     bounds=(m.data['i_min'], m.data['i_max']))
-        m.t = mo.Var(m.idxs, within=mo.PositiveReals,
-                     bounds=(m.data['t_min'], m.data['t_max']))
-        # Constraints
-        m.gdp_sum = mo.Constraint(rule=gdp_sum_rule, doc='gdp sum = gdp')
-        # optional constraints
-        b = diffusion.pop('income', False)
-        if b:
-            b = 0.2 if b is True else b
-            m.i_hi = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: income_diff_hi_rule(m, idx, b),
-                doc='income within 20% from past',
-            )
-            m.i_lo = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: income_diff_lo_rule(m, idx, b),
-                doc='income within 20% from past',
-            )
-        b = diffusion.pop('share', False)
-        if b:
-            b = 0.2 if b is True else b
-            m.s_hi = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: share_diff_hi_rule(m, idx, b),
-                doc='income share within 20% from past',
-            )
-            m.s_lo = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: share_diff_lo_rule(m, idx, b),
-                doc='income share within 20% from past',
-            )
-        b = diffusion.pop('theil', False)
-        if b:
-            b = 0.1 if b is True else b
-            m.t_hi = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: theil_diff_hi_rule(m, idx, b),
-                doc='income share within 20% from past',
-            )
-            m.t_lo = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: theil_diff_lo_rule(m, idx, b),
-                doc='income share within 20% from past',
-            )
-        if direction.pop('income', False):
-            m.i_dir = mo.Constraint(
-                m.idxs,
-                rule=income_direction_rule,
-                doc='income must track with national values',
-            )
-        if direction.pop('theil', False):
-            m.t_dir = mo.Constraint(
-                m.idxs,
-                rule=theil_direction_rule,
-                doc='theil must track with national values',
-            )
-        if 'std' in spread:
-            b = 0.2 if spread['std'] is True else spread['std']
-            m.i_std_hi = mo.Constraint(
-                rule=lambda m: std_diff_hi(m, b=b), doc='')
-            m.i_std_lo = mo.Constraint(
-                rule=lambda m: std_diff_lo(m, b=b), doc='')
-        if 'between_theil' in spread:
-            m.T_b_dir = mo.Constraint(
-                rule=between_theil_direction_rule, doc='')
+        # construct base model
+        super(Model3, self).construct(
+            diffusion=diffusion,
+            direction=direction,
+            spread=spread
+        )
+        m = self.model
         # Objective
         m.obj = mo.Objective(
-            rule=lambda m: combined_obj2(m, theil_weight=theil_weight,
-                                         pop_weight=pop_weight, f=threshold),
+            rule=lambda m: combined_obj(m, theil_weight=theil_weight,
+                                        pop_weight=pop_weight, f=threshold),
             sense=mo.minimize
         )
         return self
