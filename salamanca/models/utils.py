@@ -38,7 +38,7 @@ def below_threshold(x, i, t, mean=True):
     if mean:
         mu -= sigma2 / 2
     # f(var), argument for error function
-    arg = (mo.log(x) - mu) / mo.sqrt(2 * sigma2)
+    arg = (mo.log(x) - mu) / (math.sqrt(2) * mo.sqrt(sigma2))
     # coefficient for erf approximation
     k = math.pi ** 0.5 * math.log(2)
     # definition of cdf with tanh(kx) approximating erf(x)
