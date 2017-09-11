@@ -453,10 +453,13 @@ class Model1(Model):
         )
         m = self.model
         # Constraints specific to this model
-        m.cdf_lo = mo.Constraint(rule=threshold_lo_rule,
-                                 doc='Population under threshold within 5%')
-        m.cdf_hi = mo.Constraint(rule=threshold_hi_rule,
-                                 doc='Population under threshold within 5%')
+
+        m.cdf_lo = mo.Constraint(
+            rule=lambda m: threshold_lo_rule(m, f=threshold),
+            doc='Population under threshold within 5%')
+        m.cdf_hi = mo.Constraint(
+            rule=lambda m: threshold_hi_rule(m, f=threshold),
+            doc='Population under threshold within 5%')
         # Objective
         m.obj = mo.Objective(rule=theil_total_sum_obj, sense=mo.minimize)
         return self
