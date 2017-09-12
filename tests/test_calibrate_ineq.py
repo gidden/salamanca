@@ -157,7 +157,7 @@ def test_Model3_result():
     # ginis in original order
     obs = model.result()['gini'].values
     exp = [0.43521867, 0.24902784]
-    assert_array_almost_equal(obs, exp)
+    assert_array_almost_equal(obs, exp, eps=1e-5)
 
 
 def test_Model4_result():
@@ -181,4 +181,4 @@ def test_Model4b_result():
     # ginis in original order
     obs = model.result()['gini'].values
     exp = [0.48849954, 0.0277764]
-    assert_array_almost_equal(obs, exp)
+    assert_array_almost_equal(obs, exp, eps=1e-3)

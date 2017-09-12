@@ -65,6 +65,9 @@ def threshold_hi_rule(m, idx, f=1.0, b=1.1, relative=True):
     return lhs <= b * rhs
 
 
+# def theil_sum_rule(m, b=0.0):
+#     t_w = sum(m.t[idx] * m.data['g'][idx] for idx in m.idxs) / m.data['G']
+#     return abs(t_w - m.data['T_w']) <= b
 def theil_sum_rule(m):
     return sum(m.t[idx] * m.data['g'][idx] for idx in m.idxs) == \
         m.data['T_w'] * m.data['G']
@@ -221,8 +224,8 @@ class Model1(Model):
         # Sets
         m.idxs = mo.Set(initialize=m.data['idxs'])
         # Variables
-        m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
-                     bounds=(0, ineq.MAX_THEIL))
+        m.t = mo.Var(m.idxs, within=mo.PositiveReals,
+                     bounds=(1e-5, ineq.MAX_THEIL))
         # Constraints
         m.position = mo.Constraint(m.idxs, rule=position_rule,
                                    doc='ordering between provinces must be maintained')
@@ -248,8 +251,8 @@ class Model2(Model):
         # Sets
         m.idxs = mo.Set(initialize=m.data['idxs'])
         # Variables
-        m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
-                     bounds=(0, ineq.MAX_THEIL))
+        m.t = mo.Var(m.idxs, within=mo.PositiveReals,
+                     bounds=(1e-5, ineq.MAX_THEIL))
         # Constraints
         m.position = mo.Constraint(m.idxs, rule=position_rule,
                                    doc='ordering between provinces must be maintained')
@@ -277,8 +280,8 @@ class Model3(Model):
         # Sets
         m.idxs = mo.Set(initialize=m.data['idxs'])
         # Variables
-        m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
-                     bounds=(0, ineq.MAX_THEIL))
+        m.t = mo.Var(m.idxs, within=mo.PositiveReals,
+                     bounds=(1e-5, ineq.MAX_THEIL))
         # Constraints
         m.position = mo.Constraint(m.idxs, rule=position_rule,
                                    doc='ordering between subgroups must be maintained')
@@ -303,8 +306,8 @@ class Model4(Model):
         # Sets
         m.idxs = mo.Set(initialize=m.data['idxs'])
         # Variables
-        m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
-                     bounds=(0, ineq.MAX_THEIL))
+        m.t = mo.Var(m.idxs, within=mo.PositiveReals,
+                     bounds=(1e-5, ineq.MAX_THEIL))
         # Constraints
         m.position = mo.Constraint(m.idxs, rule=position_rule,
                                    doc='ordering between provinces must be maintained')
@@ -326,8 +329,8 @@ class Model4b(Model):
         # Sets
         m.idxs = mo.Set(initialize=m.data['idxs'])
         # Variables
-        m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
-                     bounds=(0, ineq.MAX_THEIL))
+        m.t = mo.Var(m.idxs, within=mo.PositiveReals,
+                     bounds=(1e-5, ineq.MAX_THEIL))
         # Constraints
         m.position = mo.Constraint(m.idxs, rule=position_rule,
                                    doc='ordering between provinces must be maintained')
@@ -352,8 +355,8 @@ class Model5(Model):
         # Sets
         m.idxs = mo.Set(initialize=m.data['idxs'])
         # Variables
-        m.t = mo.Var(m.idxs, within=mo.NonNegativeReals,
-                     bounds=(0, ineq.MAX_THEIL))
+        m.t = mo.Var(m.idxs, within=mo.PositiveReals,
+                     bounds=(1e-5, ineq.MAX_THEIL))
         # Constraints
         m.position = mo.Constraint(m.idxs, rule=position_rule,
                                    doc='ordering between provinces must be maintained')
