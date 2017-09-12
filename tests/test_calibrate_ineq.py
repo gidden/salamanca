@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 
 from salamanca import ineq
-from salamanca.models.calibrate_ineq import Model, Model1, Model2, Model3, Model4, Model4b
+from salamanca.models.calibrate_ineq import Model, Model1, Model2, Model3, \
+    Model4, Model4b, Model5, Model6
 
 from utils import assert_almost_equal, assert_array_almost_equal
 
@@ -181,4 +182,28 @@ def test_Model4b_result():
     # ginis in original order
     obs = model.result()['gini'].values
     exp = [0.48849954, 0.0277764]
+    assert_array_almost_equal(obs, exp, eps=1e-3)
+
+
+def test_Model5_result():
+    natdata, subdata = data()
+    model = Model5(natdata, subdata)
+    model.construct()
+    model.solve()
+
+    # ginis in original order
+    obs = model.result()['gini'].values
+    exp = [0.45663393, 0.19798727]
+    assert_array_almost_equal(obs, exp, eps=1e-3)
+
+
+def test_Model6_result():
+    natdata, subdata = data()
+    model = Model6(natdata, subdata)
+    model.construct()
+    model.solve()
+
+    # ginis in original order
+    obs = model.result()['gini'].values
+    exp = [0.4624727, 0.21394398]
     assert_array_almost_equal(obs, exp, eps=1e-3)

@@ -65,9 +65,18 @@ def threshold_hi_rule(m, idx, f=1.0, b=1.1, relative=True):
     return lhs <= b * rhs
 
 
-# def theil_sum_rule(m, b=0.0):
-#     t_w = sum(m.t[idx] * m.data['g'][idx] for idx in m.idxs) / m.data['G']
-#     return abs(t_w - m.data['T_w']) <= b
+def theil_sum_lo_rule(m, b=0.05):
+    lhs = sum(m.t[idx] * m.data['g'][idx] for idx in m.idxs)
+    rhs = m.data['T_w'] * m.data['G']
+    return lhs >= (1 - b) * rhs
+
+
+def theil_sum_hi_rule(m, b=0.05):
+    lhs = sum(m.t[idx] * m.data['g'][idx] for idx in m.idxs)
+    rhs = m.data['T_w'] * m.data['G']
+    return lhs <= (1 + b) * rhs
+
+
 def theil_sum_rule(m):
     return sum(m.t[idx] * m.data['g'][idx] for idx in m.idxs) == \
         m.data['T_w'] * m.data['G']
@@ -113,6 +122,17 @@ def threshold_obj(m, factors=[1.0], weights=[1.0], relative=True):
     return sum(
         (w * n[idx] * (x(m, idx, f) - y(m, idx, f))) ** 2
         for (f, w), idx in itertools.product(zip(factors, weights), m.idxs))
+
+
+def national_threshold_obj(m, f=1.0, relative=True):
+    I = m.data['I']
+    x = f * I if relative else f
+    lhs = sum(
+        below_threshold(x, m.data['i'][idx], m.t[idx])
+        for idx in m.idxs
+    )
+    rhs = below_threshold(x, I, m.data['T'])
+    return (lhs - rhs) ** 2
 
 
 class Model(object):
@@ -165,6 +185,7 @@ class Model(object):
             'I': ndf[i],
             'G': ndf[n] * ndf[i],
             'T_w': T_w,
+            'T': T,
         }
 
     def _check_model_data(self):
@@ -373,4 +394,37 @@ class Model5(Model):
                                  doc='')
         # Objective
         m.obj = mo.Objective(rule=l2_norm_obj, sense=mo.minimize)
+        return self
+
+
+class Model6(Model):
+    """
+    Minimize low threshold L2-norm under position, std, and approx theil sum.
+    """
+
+    def construct(self):
+        self.model = m = mo.ConcreteModel()
+        # Model Data
+        m.data = self.model_data
+        # Sets
+        m.idxs = mo.Set(initialize=m.data['idxs'])
+        # Variables
+        m.t = mo.Var(m.idxs, within=mo.PositiveReals,
+                     bounds=(1e-5, ineq.MAX_THEIL))
+        # Constraints
+        m.position = mo.Constraint(m.idxs, rule=position_rule,
+                                   doc='ordering between provinces must be maintained')
+        m.theil_sum_hi = mo.Constraint(rule=theil_sum_hi_rule,
+                                       doc='')
+        m.theil_sum_lo = mo.Constraint(rule=theil_sum_lo_rule,
+                                       doc='')
+        m.spacing = mo.Constraint(m.idxs, rule=spacing_rule,
+                                  doc='')
+        m.std_lo = mo.Constraint(m.idxs, rule=std_diff_lo_rule,
+                                 doc='')
+        m.std_hi = mo.Constraint(m.idxs, rule=std_diff_hi_rule,
+                                 doc='')
+        # Objective
+        rule = lambda m: national_threshold_obj(m, f=0.25)
+        m.obj = mo.Objective(rule=rule, sense=mo.minimize)
         return self
