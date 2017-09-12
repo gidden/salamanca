@@ -214,7 +214,7 @@ def test_runner_data():
     runner = Runner(natdata, subdata, Model)
     obs_n, obs_s = runner._data(2010, 2020)
     assert_frame_equal(obs_n, natdata)
-    assert_frame_equal(obs_s, subdata.sort_index())
+    assert_frame_equal(obs_s[subdata.columns], subdata.sort_index())
 
     # test of extended fake data
     df1 = pd.DataFrame({'n': range(3)},
@@ -228,12 +228,14 @@ def test_runner_data():
     exp = df1.loc[2010:2020]
     assert_frame_equal(obs_1, exp)
     exp = df2.loc[2010:2020].sort_index()
+    exp['n_orig'] = exp['n']
     assert_frame_equal(obs_2, exp)
     # 2020-2030
     obs_1, obs_2 = runner._data(2020, 2030)
     exp = df1.loc[2020:2030]
     assert_frame_equal(obs_1, exp)
     exp = df2.loc[2020:2030].sort_index()
+    exp['n_orig'] = exp['n']
     assert_frame_equal(obs_2, exp)
 
 
@@ -244,10 +246,12 @@ def test_runner_update():
     # before update, the result should be same as subdata
     obs = runner.result()
     exp = subdata
+    exp['n_orig'] = exp['n']
     assert_frame_equal(obs, exp)
 
     # update works on non-sorted index
     df = pd.DataFrame({
+        'n': [15., 10.],
         'i': [9, 7],
         'gini': [0.47, 0.29],
     }, index=pd.Index(['foo', 'bar'], name='name'))
@@ -255,4 +259,5 @@ def test_runner_update():
     obs = runner.result()
     exp.loc[(2020,), 'gini'] = df['gini'].values
     exp.loc[(2020,), 'i'] = df['i'].values
+    exp.loc[(2020,), 'n'] = df['n'].values
     assert_frame_equal(obs, exp)

@@ -355,6 +355,7 @@ class Model(object):
                                         empirical=self.empirical),
             't_max': ineq.gini_to_theil(gini_max,
                                         empirical=self.empirical),
+            'N': ndf.loc[modelidx][n],
             'I': 1.0,
             'I_new': ndf.loc[modelidx][i],
             'I_old': ndf.loc[histidx][i],
@@ -399,10 +400,10 @@ class Model(object):
         return self
 
     def result(self):
-        nfrac, n, i, gini = 'n_frac', 'n', 'i', 'gini'
+        nfrac, n, N, i, gini = 'n_frac', 'n', 'N', 'i', 'gini'
         df = pd.DataFrame({
             i: self.solution[i] * self.scale_I,
-            n: self.model_data[nfrac] * self.natdata.loc[self._modelidx][n],
+            n: self.model_data[nfrac] * self.model_data[N],
             gini: ineq.theil_to_gini(self.solution['t'], empirical=self.empirical),
         }, index=self.orig_idx)
 
@@ -563,6 +564,8 @@ class Runner(object):
         self.subdata = subdata.copy()
         self._orig_idx = subdata.index
         self._result = subdata.copy().sort_index()
+        for c in ['n']:
+            self._result[c + '_orig'] = self._result[c]
         self.Model = model
         self.constructor_kwargs = constructor_kwargs
         self.model_kwargs = model_kwargs
@@ -586,6 +589,7 @@ class Runner(object):
     def _update(self, t, df):
         df = df.sort_index()
         idx = (t, list(df.index.values))
+        self._result.loc[idx, 'n'] = df['n'].values
         self._result.loc[idx, 'i'] = df['i'].values
         self._result.loc[idx, 'gini'] = df['gini'].values
 
