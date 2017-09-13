@@ -205,5 +205,5 @@ def test_Model6_result():
 
     # ginis in original order
     obs = model.result()['gini'].values
-    exp = [0.4624727, 0.21394398]
-    assert_array_almost_equal(obs, exp, eps=1e-3)
+    exp = [0.46819797, 0.22868762]
+    assert_array_almost_equal(obs, exp)
