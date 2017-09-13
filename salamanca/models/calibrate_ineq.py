@@ -138,11 +138,10 @@ def national_threshold_obj(m, f=1.0, relative=True):
 class Model(object):
     """Base class for Inequality Calibration Models"""
 
-    def __init__(self, natdata, subdata, empirical=False, sort=True):
+    def __init__(self, natdata, subdata, empirical=False):
         self.natdata = natdata
         self.subdata = subdata
         self.empirical = empirical
-        self.sort = sort
 
         self._setup_model_data(natdata, subdata)
         self._check_model_data()
@@ -171,7 +170,6 @@ class Model(object):
         assert(T_w > 0 and T > T_w)
         assert(T_b > 0 and T > T_b)
 
-        # if self.sort:
         # save index of sorted values
         self.orig_idx = sdf.index
         sdf = sdf.sort_values(by=gini)
@@ -226,8 +224,6 @@ class Model(object):
         })
 
         # set up index
-        df.index = self.model_idx
-        # if self.sort:
         df.index = self.sorted_idx
         df = df.loc[self.orig_idx]
 
