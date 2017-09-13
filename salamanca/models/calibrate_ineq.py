@@ -422,18 +422,18 @@ class Model6(Model):
         m.t = mo.Var(m.idxs, within=mo.PositiveReals,
                      bounds=(1e-5, ineq.MAX_THEIL))
         # Constraints
-        # m.position = mo.Constraint(m.idxs, rule=position_rule,
-        #                            doc='ordering between provinces must be maintained')
+        m.position = mo.Constraint(m.idxs, rule=position_rule,
+                                   doc='ordering between provinces must be maintained')
         m.theil_sum_hi = mo.Constraint(rule=theil_sum_hi_rule,
                                        doc='')
         m.theil_sum_lo = mo.Constraint(rule=theil_sum_lo_rule,
                                        doc='')
-        # m.spacing = mo.Constraint(m.idxs, rule=spacing_rule,
-        #                           doc='')
-        # m.std_lo = mo.Constraint(m.idxs, rule=std_diff_lo_rule,
-        #                          doc='')
-        # m.std_hi = mo.Constraint(m.idxs, rule=std_diff_hi_rule,
-        #                          doc='')
+        m.spacing = mo.Constraint(m.idxs, rule=spacing_rule,
+                                  doc='')
+        m.std_lo = mo.Constraint(m.idxs, rule=std_diff_lo_rule,
+                                 doc='')
+        m.std_hi = mo.Constraint(m.idxs, rule=std_diff_hi_rule,
+                                 doc='')
         # Objective
         m.obj = mo.Objective(
             rule=lambda m: national_threshold_obj(m, f=0.25),
