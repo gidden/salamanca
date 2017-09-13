@@ -65,13 +65,13 @@ def threshold_hi_rule(m, idx, f=1.0, b=1.1, relative=True):
     return lhs <= b * rhs
 
 
-def theil_sum_lo_rule(m, b=0.05):
+def theil_sum_lo_rule(m, b=0.1):
     lhs = sum(m.t[idx] * m.data['g'][idx] for idx in m.idxs)
     rhs = m.data['T_w'] * m.data['G']
     return lhs >= (1 - b) * rhs
 
 
-def theil_sum_hi_rule(m, b=0.05):
+def theil_sum_hi_rule(m, b=0.1):
     lhs = sum(m.t[idx] * m.data['g'][idx] for idx in m.idxs)
     rhs = m.data['T_w'] * m.data['G']
     return lhs <= (1 + b) * rhs
@@ -128,7 +128,7 @@ def national_threshold_obj(m, f=1.0, relative=True):
     I = m.data['I']
     x = f * I if relative else f
     lhs = sum(
-        below_threshold(x, m.data['i'][idx], m.t[idx])
+        m.data['n_frac'][idx] * below_threshold(x, m.data['i'][idx], m.t[idx])
         for idx in m.idxs
     )
     rhs = below_threshold(x, I, m.data['T'])
@@ -138,10 +138,11 @@ def national_threshold_obj(m, f=1.0, relative=True):
 class Model(object):
     """Base class for Inequality Calibration Models"""
 
-    def __init__(self, natdata, subdata, empirical=False):
+    def __init__(self, natdata, subdata, empirical=False, sort=True):
         self.natdata = natdata
         self.subdata = subdata
         self.empirical = empirical
+        self.sort = sort
 
         self._setup_model_data(natdata, subdata)
         self._check_model_data()
@@ -157,7 +158,9 @@ class Model(object):
 
         # correct income by scaling
         sdf[n] *= ndf[n] / sdf[n].sum()
+        assert(np.isclose(ndf[n], sdf[n].sum()))
         sdf[i] *= (ndf[n] * ndf[i]) / (sdf[n] * sdf[i]).sum()
+        assert(np.isclose(ndf[n] * ndf[i], (sdf[n] * sdf[i]).sum()))
 
         # calculate national within theil
         T = ineq.gini_to_theil(ndf[gini], empirical=self.empirical)
@@ -165,7 +168,10 @@ class Model(object):
         nfrac = sdf[n] / ndf[n]
         T_b = np.sum(gfrac * np.log(gfrac / nfrac))
         T_w = T - T_b
+        assert(T_w > 0 and T > T_w)
+        assert(T_b > 0 and T > T_b)
 
+        # if self.sort:
         # save index of sorted values
         self.orig_idx = sdf.index
         sdf = sdf.sort_values(by=gini)
@@ -218,9 +224,13 @@ class Model(object):
             n: self.model_data[n],
             gini: ineq.theil_to_gini(self.solution, empirical=self.empirical),
         })
-        df.index = self.sorted_idx
 
+        # set up index
+        df.index = self.model_idx
+        # if self.sort:
+        df.index = self.sorted_idx
         df = df.loc[self.orig_idx]
+
         df['i_orig'] = self.subdata[i]
         df['n_orig'] = self.subdata[n]
         df['gini_orig'] = self.subdata[gini]
@@ -412,19 +422,21 @@ class Model6(Model):
         m.t = mo.Var(m.idxs, within=mo.PositiveReals,
                      bounds=(1e-5, ineq.MAX_THEIL))
         # Constraints
-        m.position = mo.Constraint(m.idxs, rule=position_rule,
-                                   doc='ordering between provinces must be maintained')
+        # m.position = mo.Constraint(m.idxs, rule=position_rule,
+        #                            doc='ordering between provinces must be maintained')
         m.theil_sum_hi = mo.Constraint(rule=theil_sum_hi_rule,
                                        doc='')
         m.theil_sum_lo = mo.Constraint(rule=theil_sum_lo_rule,
                                        doc='')
-        m.spacing = mo.Constraint(m.idxs, rule=spacing_rule,
-                                  doc='')
-        m.std_lo = mo.Constraint(m.idxs, rule=std_diff_lo_rule,
-                                 doc='')
-        m.std_hi = mo.Constraint(m.idxs, rule=std_diff_hi_rule,
-                                 doc='')
+        # m.spacing = mo.Constraint(m.idxs, rule=spacing_rule,
+        #                           doc='')
+        # m.std_lo = mo.Constraint(m.idxs, rule=std_diff_lo_rule,
+        #                          doc='')
+        # m.std_hi = mo.Constraint(m.idxs, rule=std_diff_hi_rule,
+        #                          doc='')
         # Objective
-        rule = lambda m: national_threshold_obj(m, f=0.25)
-        m.obj = mo.Objective(rule=rule, sense=mo.minimize)
+        m.obj = mo.Objective(
+            rule=lambda m: national_threshold_obj(m, f=0.25),
+            sense=mo.minimize
+        )
         return self
