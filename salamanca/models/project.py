@@ -99,8 +99,10 @@ def income_rate_lo_rule(m, idx, b):
     """
     lhs = m.data['I_new'] * m.i[idx] - m.data['i'][idx]
     rhs = m.data['I_new'] - m.data['I_old']
-    assert(rhs > 0)
-    return lhs >= b * rhs
+    if rhs > 0:  # income increases
+        return lhs >= b * rhs
+    else:  # income decreases
+        return lhs <= b * rhs
 
 
 def income_rate_hi_rule(m, idx, b):
@@ -108,8 +110,10 @@ def income_rate_hi_rule(m, idx, b):
     """
     lhs = m.data['I_new'] * m.i[idx] - m.data['i'][idx]
     rhs = m.data['I_new'] - m.data['I_old']
-    assert(rhs > 0)
-    return lhs <= b * rhs
+    if rhs > 0:  # income increases
+        return lhs <= b * rhs
+    else:  # income decreases
+        return lhs >= b * rhs
 
 
 def share_diff_hi_rule(m, idx, b):
