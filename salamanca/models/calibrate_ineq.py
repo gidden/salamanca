@@ -415,8 +415,12 @@ class Model6(Model):
         # Sets
         m.idxs = mo.Set(initialize=m.data['idxs'])
         # Variables
+        t_min = min(ineq.gini_to_theil(0.15, empirical=self.empirical),
+                    np.min(m.data['t']))
+        t_max = max(ineq.gini_to_theil(0.85, empirical=self.empirical),
+                    np.max(m.data['t']))
         m.t = mo.Var(m.idxs, within=mo.PositiveReals,
-                     bounds=(1e-5, ineq.MAX_THEIL))
+                     bounds=(t_min, t_max))
         # Constraints
         m.position = mo.Constraint(m.idxs, rule=position_rule,
                                    doc='ordering between provinces must be maintained')

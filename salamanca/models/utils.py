@@ -11,6 +11,15 @@ def tanh(x):
     return (mo.exp(x) - mo.exp(-x)) / (mo.exp(x) + mo.exp(-x))
 
 
+def lognorm_cdf(x, mu, sigma2):
+    # f(var), argument for error function
+    arg = (mo.log(x) - mu) / (math.sqrt(2) * mo.sqrt(sigma2))
+    # coefficient for erf approximation
+    k = math.pi ** 0.5 * math.log(2)
+    # definition of cdf with tanh(kx) approximating erf(x)
+    return 0.5 + 0.5 * tanh(k * arg)
+
+
 def below_threshold(x, i, t, mean=True):
     """Compute the CDF of the lognormal distribution at x using an approximation of
     the error function:
@@ -37,12 +46,7 @@ def below_threshold(x, i, t, mean=True):
     mu = mo.log(i)
     if mean:
         mu -= sigma2 / 2
-    # f(var), argument for error function
-    arg = (mo.log(x) - mu) / (math.sqrt(2) * mo.sqrt(sigma2))
-    # coefficient for erf approximation
-    k = math.pi ** 0.5 * math.log(2)
-    # definition of cdf with tanh(kx) approximating erf(x)
-    return 0.5 + 0.5 * tanh(k * arg)
+    return lognorm_cdf(x, mu, sigma2)
 
 
 def model_T_w(m, income_from_data=True):
