@@ -117,32 +117,6 @@ def income_rate_hi_rule(m, idx, b):
         return lhs >= b * rhs
 
 
-def share_diff_hi_rule(m, idx, b):
-    """
-    \frac{s^{t+1} - s^t}{s^{t}} \geq -0.2
-
-    s^t = \frac{i^t n^t}{I^t N^t}
-
-    @TODO: is 20% in 10 years (or other timeperiod) reasonable?
-    """
-    lhs = m.i[idx] * m.data['n_frac'][idx] / m.data['I']
-    rhs = m.data['i'][idx] * m.data['n_frac_old'][idx] / m.data['I_old']
-    return lhs >= (1 - b) * rhs
-
-
-def share_diff_lo_rule(m, idx, b):
-    """
-    \frac{s^{t+1} - s^t}{s^{t}} \leq 0.2
-
-    s^t = \frac{i^t n^t}{I^t N^t}
-
-    @TODO: is 20% in 10 years (or other timeperiod) reasonable?
-    """
-    lhs = m.i[idx] * m.data['n_frac'][idx] / m.data['I']
-    rhs = m.data['i'][idx] * m.data['n_frac_old'][idx] / m.data['I_old']
-    return lhs <= (1 + b) * rhs
-
-
 def std_diff_hi(m, b=0.2):
     rhs = i_std(m, from_data=True)
     lhs = i_std(m, from_data=False)
@@ -223,10 +197,11 @@ def combined_obj(m, theil_weight=1.0, pop_weight=1.0, **pop_kwargs):
 class Model(object):
     """Base class for Projection Models"""
 
-    def __init__(self, natdata, subdata, empirical=False):
+    def __init__(self, natdata, subdata, empirical=False, override_national={}):
         self.natdata = natdata
         self.subdata = subdata
         self.empirical = empirical
+        self.override_national = override_national
 
         self._setup_model_data(natdata, subdata)
         self._check_model_data()
@@ -284,19 +259,6 @@ class Model(object):
                 rule=lambda m, idx: income_diff_lo_rule(m, idx, b),
                 doc='income within 20% from past',
             )
-        if 'share' in diffusion:
-            b = diffusion['share']
-            b = 0.2 if b is True else b
-            m.s_hi = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: share_diff_hi_rule(m, idx, b),
-                doc='income share within 20% from past',
-            )
-            m.s_lo = mo.Constraint(
-                m.idxs,
-                rule=lambda m, idx: share_diff_lo_rule(m, idx, b),
-                doc='income share within 20% from past',
-            )
         if 'theil' in diffusion:
             b = diffusion['theil']
             b = 0.1 if b is True else b
@@ -326,15 +288,20 @@ class Model(object):
         self._histidx = histidx = ndf.index[0]
         self._modelidx = modelidx = ndf.index[1]
 
-        # correct population
-        ratio = ndf.loc[modelidx][n] / sdf.loc[modelidx][n].sum()
-        if not np.isclose(ratio, 1.0):
-            msg = 'Scaling subnational population to match national ' + \
-                'population with ratio: {}'
-            warnings.warn(msg.format(ratio))
-            sdf.loc[modelidx][n] *= ratio
-        n_s = sdf.loc[modelidx][n].sum()
-        n_n = ndf.loc[modelidx][n]
+        if self.override_national.get(n, False):
+            # override national value with subnational value
+            ratio = 1
+            n_s = n_n = sdf.loc[modelidx][n].sum()
+        else:
+            # correct subnational population to national value by scaling
+            ratio = ndf.loc[modelidx][n] / sdf.loc[modelidx][n].sum()
+            if not np.isclose(ratio, 1.0):
+                msg = 'Scaling subnational population to match national ' + \
+                      'population with ratio: {}'
+                warnings.warn(msg.format(ratio))
+                sdf.loc[modelidx][n] *= ratio
+            n_s = sdf.loc[modelidx][n].sum()
+            n_n = ndf.loc[modelidx][n]
         if not np.isclose(n_s, n_n):
             msg = 'Subnational ({}) != national ({}) population using ratio: {}'
             raise RuntimeError(msg.format(n_s, n_n, ratio))
@@ -353,8 +320,7 @@ class Model(object):
         self.scale_I = ndf.loc[modelidx][i]
         self.model_data = {
             'idxs': self.model_idx,
-            'n_frac_old': sdf.loc[histidx][n].values / ndf.loc[histidx][n],
-            'n_frac': sdf.loc[modelidx][n].values / ndf.loc[modelidx][n],
+            'n_frac': sdf.loc[modelidx][n].values / n_n,
             'i': sdf.loc[histidx][i].values,
             'i_min': 0.1 * np.min(sdf.loc[histidx][i].values) / ndf.loc[histidx][i],
             'i_max': 10 * np.max(sdf.loc[histidx][i].values) / ndf.loc[histidx][i],
@@ -364,7 +330,7 @@ class Model(object):
                                         empirical=self.empirical),
             't_max': ineq.gini_to_theil(gini_max,
                                         empirical=self.empirical),
-            'N': ndf.loc[modelidx][n],
+            'N': n_n,
             'I': 1.0,
             'I_new': ndf.loc[modelidx][i],
             'I_old': ndf.loc[histidx][i],
@@ -384,7 +350,7 @@ class Model(object):
         raise NotImplementedError()
 
     def debug(self, pth=''):
-        skeys = ['idxs', 'n_frac_old', 'n_frac', 'i', 't',
+        skeys = ['idxs', 'n_frac', 'i', 't',
                  't_min', 't_max', 'i_min', 'i_max']
         sdf = pd.DataFrame({s: self.model_data[s] for s in skeys},
                            index=self.orig_idx)

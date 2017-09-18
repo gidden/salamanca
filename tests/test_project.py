@@ -19,7 +19,7 @@ def data():
         'gini': [0.4, 0.35],
     }, index=pd.Index([2010, 2020], name='year'))
     subdata = pd.DataFrame({
-        'n': [7, 13, 9, 16],
+        'n': np.array([7, 13, 9, 16]) * 0.75,
         'i': [10, 5, np.nan, np.nan],
         'gini': [0.5, 0.3, np.nan, np.nan],
     },
@@ -50,9 +50,31 @@ def test_model_data_pop():
     natdata, subdata = data()
     model = Model(natdata, subdata)
 
-    # pop
+    # pop, fraction
     obs = model.model_data['n_frac']
     exp = subdata.loc[2020]['n'] / subdata.loc[2020]['n'].sum()
+    assert_array_almost_equal(obs, exp)
+
+    # pop, absolute
+    obs = model.model_data['n_frac'] * model.model_data['N']
+    exp = subdata.loc[2020]['n'] * \
+        natdata.loc[2020]['n'] / subdata.loc[2020]['n'].sum()
+    assert_array_almost_equal(obs, exp)
+
+
+def test_model_data_pop_override():
+    # note all subdata order is swapped in model_data due to sorting by gini
+    natdata, subdata = data()
+    model = Model(natdata, subdata, override_national={'n': True})
+
+    # pop, fraction
+    obs = model.model_data['n_frac']
+    exp = subdata.loc[2020]['n'] / subdata.loc[2020]['n'].sum()
+    assert_array_almost_equal(obs, exp)
+
+    # pop, absolute
+    obs = model.model_data['n_frac'] * model.model_data['N']
+    exp = subdata.loc[2020]['n']
     assert_array_almost_equal(obs, exp)
 
 
@@ -100,7 +122,8 @@ def test_Model1_result():
     exp = subdata.loc[2020]['n']
     assert_array_almost_equal(obs, exp)
     obs = df['n']
-    exp = subdata.loc[2020]['n']
+    exp = subdata.loc[2020]['n'] * \
+        natdata.loc[2020]['n'] / subdata.loc[2020]['n'].sum()
     assert_array_almost_equal(obs, exp)
 
     # this is a regression test, results tested 08-29-17
@@ -116,15 +139,15 @@ def test_Model1_result():
 def test_Model1_diffusion_result():
     natdata, subdata = data()
     model = Model1(natdata, subdata)
-    diffusion = {'share': True, 'theil': True}
+    diffusion = {'income': True, 'theil': True}
     model.construct(diffusion=diffusion)
     model.solve()
     df = model.result()
 
-    # this is a regression test, results tested 08-29-17
+    # this is a regression test, results tested 09-18-17
     obs = df[['gini', 'i']]
     exp = pd.DataFrame({
-        'i': np.array([8.20987721375, 6.31944406727]),
+        'i': np.array([8.38271666486, 6.22222187602]),
         'gini': np.array([0.477747557316, 0.285296967258]),
     }, index=pd.Index(['foo', 'bar'], name='name'))
     assert_frame_equal(obs, exp)
