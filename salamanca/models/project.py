@@ -317,7 +317,6 @@ class Model(object):
         ginis = sdf.loc[histidx][gini].values
         gini_min = min(0.15, np.min(ginis))
         gini_max = max(0.85, np.max(ginis))
-        self.scale_I = ndf.loc[modelidx][i]
         self.model_data = {
             'idxs': self.model_idx,
             'n_frac': sdf.loc[modelidx][n].values / n_n,
@@ -375,9 +374,9 @@ class Model(object):
         return self
 
     def result(self):
-        nfrac, n, N, i, gini = 'n_frac', 'n', 'N', 'i', 'gini'
+        nfrac, n, N, i, I, gini = 'n_frac', 'n', 'N', 'i', 'I_new', 'gini'
         df = pd.DataFrame({
-            i: self.solution[i] * self.scale_I,
+            i: self.solution[i] * self.model_data[I],
             n: self.model_data[nfrac] * self.model_data[N],
             gini: ineq.theil_to_gini(self.solution['t'], empirical=self.empirical),
         }, index=self.orig_idx)
