@@ -3,6 +3,7 @@ from __future__ import division
 import copy
 import itertools
 import math
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -327,7 +328,11 @@ class Model(object):
 
         # correct population
         ratio = ndf.loc[modelidx][n] / sdf.loc[modelidx][n].sum()
-        sdf.loc[modelidx][n] *= ratio
+        if not np.isclose(ratio, 1.0):
+            msg = 'Scaling subnational population to match national ' + \
+                'population with ratio: {}'
+            warnings.warn(msg.format(ratio))
+            sdf.loc[modelidx][n] *= ratio
         n_s = sdf.loc[modelidx][n].sum()
         n_n = ndf.loc[modelidx][n]
         if not np.isclose(n_s, n_n):
