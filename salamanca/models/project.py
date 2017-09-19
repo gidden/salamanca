@@ -345,9 +345,6 @@ class Model(object):
         if not np.isclose(obs, exp):
             raise ValueError('Population values do not sum to national')
 
-    def construct(self):
-        raise NotImplementedError()
-
     def debug(self, pth=''):
         skeys = ['idxs', 'n_frac', 'i', 't',
                  't_min', 't_max', 'i_min', 'i_max']
