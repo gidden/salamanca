@@ -215,8 +215,8 @@ class Model(object):
             m.i_std_lo = mo.Constraint(
                 rule=lambda m: std_diff_lo(m, b=b), doc='')
         if 'income_rate' in spread:
-            b_lo = spread['income_rate'].pop('b_lo', 0.5)
-            b_hi = spread['income_rate'].pop('b_hi', 1.5)
+            b_lo = spread['income_rate'].get('b_lo', 0.5)
+            b_hi = spread['income_rate'].get('b_hi', 1.5)
             m.rate_hi = mo.Constraint(
                 m.idxs,
                 rule=lambda m, idx: income_rate_hi_rule(m, idx, b_hi),
