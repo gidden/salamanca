@@ -39,7 +39,16 @@ def _theil_empirical_constants():
     return 0.216, 0.991, 0.003
 
 
-def gini_to_theil(g, empirical=False):
+def _check_bounds(name, ary, lb, ub, ignorenan):
+    bad = (ary <= lb) | (ary >= ub)
+    if not ignorenan:
+        bad |= np.isnan(ary)
+    if np.any(bad):
+        msg = '{} not within ({}, {})'
+        raise ValueError(msg.format(name, lb, ub))
+
+
+def gini_to_theil(g, empirical=False, ignorenan=False):
     r"""Translate gini to theil
 
     .. math::
@@ -55,10 +64,10 @@ def gini_to_theil(g, empirical=False):
         gini coefficient(s)
     empirical : bool, optional, default: False
         whether to use empirical relationship for theil
-
+    ignorenan: bool, optional, default: True
+        if True, throw an error if NaN is encountered in input or output
     """
-    if not (np.all(g > 0) and np.all(g < 1)):
-        raise ValueError('Gini not within (0, 1)')
+    _check_bounds('Gini', g, 0, 1, ignorenan=ignorenan)
 
     s = gini_to_std(g)
     t = std_to_theil(s)
@@ -67,12 +76,11 @@ def gini_to_theil(g, empirical=False):
         a, b, c = _theil_empirical_constants()
         t = (-b + (b ** 2 - 4 * a * (c - t)) ** 0.5) / (2 * a)
 
-    if not (np.all(t < MAX_THEIL) and np.all(t > 0)):
-        raise ValueError('Theil not within (0, 2.88): {}'.format(t))
+    _check_bounds('Theil', t, 0, MAX_THEIL, ignorenan=ignorenan)
     return t
 
 
-def theil_to_gini(t, empirical=False):
+def theil_to_gini(t, empirical=False, ignorenan=False):
     r"""Translate theil to gini
 
     .. math::
@@ -89,8 +97,7 @@ def theil_to_gini(t, empirical=False):
     empirical : bool, optional, default: False
         whether to use empirical relationship for theil
     """
-    if not (np.all(t < MAX_THEIL) and np.all(t > 0)):
-        raise ValueError('Theil not within (0, 2.88): {}'.format(t))
+    _check_bounds('Theil', t, 0, MAX_THEIL, ignorenan=ignorenan)
 
     if empirical:
         a, b, c = _theil_empirical_constants()
@@ -98,9 +105,21 @@ def theil_to_gini(t, empirical=False):
     s = theil_to_std(t)
     g = std_to_gini(s)
 
-    if not (np.all(g > 0) and np.all(g < 1)):
-        raise ValueError('Gini not within (0, 1)')
+    _check_bounds('Gini', g, 0, 1, ignorenan=ignorenan)
     return g
+
+
+# def recompose_theil(df):
+#     n = df['n'].sum()
+#     i = (df['n'] * df['i']).sum() / n
+#     t_b = (df['n'] * df['i'] * np.log(df['i'] / i)).sum() / (n * i)
+#     t_w = (df['n'] * df['i'] * df['t']).sum() / (n * i)
+#     return t_w + t_b
+
+
+# def below_threshold(threshold, dist=None, **kwargs):
+#     dist = dist or LogNormal()
+#     return dist.below_threshold(threshold, **kwargs)
 
 
 class LogNormalData(AttrObject):

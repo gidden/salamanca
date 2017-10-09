@@ -1,5 +1,7 @@
 import pytest
 
+import numpy as np
+
 from salamanca import ineq as iq
 
 from utils import assert_almost_equal
@@ -65,6 +67,16 @@ def test_gini_to_theil_close_hi():
     iq.gini_to_theil(0.99, empirical=True)
 
 
+def test_gini_to_theil_nan():
+    obs = iq.gini_to_theil(np.nan, ignorenan=True)
+    assert np.isnan(obs)
+
+
+def test_theil_to_gini_nan():
+    obs = iq.theil_to_gini(np.nan, ignorenan=True)
+    assert np.isnan(obs)
+
+
 def test_gini_to_theil_error():
     with pytest.raises(ValueError):
         iq.gini_to_theil(-1)
@@ -77,6 +89,9 @@ def test_gini_to_theil_error():
 
     with pytest.raises(ValueError):
         iq.gini_to_theil(1.1)
+
+    with pytest.raises(ValueError):
+        iq.gini_to_theil(np.nan)
 
 
 def test_theil_to_gini_error():
@@ -91,6 +106,9 @@ def test_theil_to_gini_error():
 
     with pytest.raises(ValueError):
         iq.theil_to_gini(7.0)
+
+    with pytest.raises(ValueError):
+        iq.theil_to_gini(np.nan)
 
 
 def test_lndata_init():
