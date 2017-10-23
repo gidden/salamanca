@@ -22,6 +22,8 @@ WB_INDICATORS = {
     'NY.GDP.DEFL.ZS': 'gdp_deflator',
     'SI.POV.DDAY': 'below_1_90_dollars_per_day_ppp',
     'NE.CON.PETC.ZS': 'household_fraction_gdp',
+    'SI.POV.GINI': 'gini',
+    'NY.GDP.MKTP.KD': 'gdp',
 }
 
 INDICATORS_WB = {d: k for k, d in WB_INDICATORS.items()}

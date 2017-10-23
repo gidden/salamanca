@@ -12,20 +12,23 @@ COMMANDS = {}
 
 
 def download_wb_cli(parser):
+    inds = 'Indicators to Download'
+    parser.add_argument('--ind', help=inds, nargs='+', default=None)
     log = 'Print log output during download.'
     parser.add_argument('--log', help=log, action="store_true")
     overwrite = 'Overwrite local files if they exist.'
     parser.add_argument('--overwrite', help=overwrite, action="store_true")
 
 
-def download_wb(log=False, overwrite=False, **kwargs):
+def download_wb(inds=None, log=False, overwrite=False, **kwargs):
     if log:
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
 
     wb = data.WorldBank()
     wb.iso_metadata(overwrite=overwrite)
-    for ind in data.INDICATORS_WB:
+    inds = inds or data.INDICATORS_WB
+    for ind in inds:
         wb.query(ind, overwrite=overwrite)
 
 
