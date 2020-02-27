@@ -203,7 +203,8 @@ class Model(object):
         result = solver.solve(m)  # , tee=True)
         result.write()
         m.solutions.load_from(result)
-        self.solution = pd.Series(m.t.get_values().values(), name='thiel')
+        x = m.t.get_values().values()
+        self.solution = pd.Series(list(x), name='thiel')
         return self
 
     def result(self):
