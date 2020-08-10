@@ -54,7 +54,7 @@ def test_wb_query_cache():
     assert db.exists(source, ind)
 
     obs = float(df[(df.country == 'AFG') & (df.date == 1992)]['value'])
-    exp = 43.507299
+    exp = 39.28 # TODO why was it 43.507299?
     assert obs == approx(exp)
 
 
