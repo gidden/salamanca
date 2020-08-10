@@ -26,7 +26,7 @@ WB_INDICATORS = {
 
 INDICATORS_WB = {d: k for k, d in WB_INDICATORS.items()}
 
-WB_URL = 'http://api.worldbank.org/en/countries/{iso}/indicators'
+WB_URL = 'http://api.worldbank.org/v2/country/{iso}/indicator/{indicator}'
 
 EU_COUNTRIES = [
     'AUT', 'BEL', 'CYP',
@@ -40,7 +40,7 @@ EU_COUNTRIES = [
 
 
 @contextlib.contextmanager
-def query_rest_api(url, tries=5, asjson=True):
+def query_rest_api(url, params=None, tries=5):
     """Query a REST API online
 
     Parameters
@@ -49,22 +49,32 @@ def query_rest_api(url, tries=5, asjson=True):
        url to query
     tries : int, optional
        number of times to try query before raising an IOError
-    asjson : bool, optional
-       read query as a json object
     """
+    params = {
+        'format': 'json',
+        'per_page': 1000,
+        **(params if params is not None else {})
+    }
     logging.debug('Querying: {}, tries left: {}'.format(url, tries))
     n = 0
     while n < tries:
         try:
-            result = requests.get(url)
-            if asjson:
-                result = result.json()
+            q = requests.get(url, params=params)
+            result = q.json()
+            if isinstance(result, dict):
+                meta = result
+            elif isinstance(result, list):
+                meta = result[0]
+            else:
+                raise RuntimeError("Unexpected reply payload: {}".format(result))
+            if 'message' in meta:
+                raise RuntimeError(meta['message'])
             yield result
             break
         except IOError:
             n += 1
-    if n == tries:
-        raise IOError('Query failed: {}'.format(url))
+    else:
+        raise RuntimeError('Query failed: {}'.format(q.url))
 
 
 class WorldBank(object):
@@ -73,36 +83,20 @@ class WorldBank(object):
     def __init__(self):
         self.query_args = ['date', 'MRV', 'Gapfill', 'frequency']
 
-    def _query_url(self, wb_ind, **kwargs):
-        iso = kwargs.pop('iso', 'all')
-        url = '{}/{}?format=json&per_page=1000'.format(
-            WB_URL.format(iso=iso), wb_ind)
-        urlargs = ''
-        for arg in self.query_args:
-            if arg in kwargs:
-                arg = '{}={}'.format(arg, kwargs[arg])
-                urlargs = '&'.join([urlargs, arg])
-        return url + urlargs
+    def _do_query(self, wb, params=None, tries=5):
+        params = params.copy()
+        url = WB_URL.format(indicator=wb, iso=params.pop('iso', 'all'))
 
-    def _do_query(self, url, tries=5):
-        baseurl = url if '?' in url else url + '?'
         pages = 1
-        page = 0
+        params['page'] = 0
+
         result = []
-        while page < pages:
-            page += 1
-            url = '{}&page={}'.format(baseurl, page)
-            failed = False
-            with query_rest_api(url) as _result:
-                if 'message' in _result[0]:
-                    failed = True
-                    msg = _result[0]['message'][0]
-                else:
-                    pages = _result[0]['pages']
-                    result += _result[1]
-            if failed:
-                raise IOError(msg)
-            logging.debug('Page {} of {} Complete'.format(page, pages))
+        while params['page'] < pages:
+            params['page'] += 1
+            with query_rest_api(url, params=params) as _result:
+                pages = _result[0]['pages']
+                result += _result[1]
+            logging.debug('Page {} of {} Complete'.format(params['page'], pages))
         return result
 
     def query(self, indicator, tries=5, use_cache=True, overwrite=False, **kwargs):
@@ -142,16 +136,14 @@ class WorldBank(object):
                 return db.read(source, ind)
 
         # otherwise get raw data
-        mapping = self.iso_metadata(map_cols=['iso2Code', 'id'])
-        url = self._query_url(wb, **kwargs)
-        result = self._do_query(url, tries=tries)
+        result = self._do_query(wb, params=kwargs, tries=tries)
 
         # construct as data frame
-        df = pd.DataFrame(result).drop(['decimal', 'indicator'], axis=1)
+        df = pd.DataFrame(result)
+        df.drop(['decimal', 'indicator', 'countryiso3code',
+                 'unit', 'obs_status'],
+                axis=1, inplace=True)
         df['country'] = df['country'].apply(lambda x: x['id'])
-        df['value'] = df['value'].astype(float)
-        # map iso2 ids from rest api to iso3
-        df['country'] = df['country'].map(mapping)
         try:
             # convert years if possible
             df['date'] = df['date'].astype(int)
@@ -172,7 +164,7 @@ class WorldBank(object):
         source = 'wb'
         ind = 'iso_mapping'
         if overwrite or not db.exists(source, ind):
-            url = 'http://api.worldbank.org/countries?format=json&per_page=1000'
+            url = 'http://api.worldbank.org/v2/country'
             with query_rest_api(url) as x:
                 df = pd.DataFrame(x[1])
                 idcols = ['adminregion', 'incomeLevel',

@@ -9,24 +9,6 @@ from salamanca import data
 
 from utils import assert_almost_equal, logging_on
 
-
-def test_wb_query_url():
-    wb = data.WorldBank()
-
-    obs = wb._query_url('DPANUSIFS')
-    exp = 'http://api.worldbank.org/en/countries/all/indicators/DPANUSIFS?format=json&per_page=1000'
-    assert obs == exp
-
-    obs = wb._query_url('DPANUSIFS', iso='br')
-    exp = 'http://api.worldbank.org/en/countries/br/indicators/DPANUSIFS?format=json&per_page=1000'
-    assert obs == exp
-
-    obs = wb._query_url(
-        'DPANUSIFS', iso='ind;chn', MRV=5, frequency='M')
-    exp = 'http://api.worldbank.org/en/countries/ind;chn/indicators/DPANUSIFS?format=json&per_page=1000&MRV=5&frequency=M'
-    assert obs == exp
-
-
 @pytest.mark.remote
 def test_wb_db_query():
     wb = data.WorldBank()
