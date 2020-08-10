@@ -23,3 +23,8 @@ def pytest_collection_modifyitems(config, items):
             skip = pytest.mark.skip(reason="need --{} option to run".format(m))
             if m in item.keywords:
                 item.add_marker(skip)
+
+def logging_on():
+    import logging
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)

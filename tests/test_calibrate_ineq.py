@@ -1,12 +1,12 @@
 import pytest
+from pytest import approx
 
 import numpy as np
 import pandas as pd
+from pandas.testing import assert_series_equal
 
 from salamanca import ineq
 from salamanca.models.calibrate_ineq import Model, Model1, Model2, Model3, Model4, Model4b
-
-from utils import assert_almost_equal, assert_array_almost_equal
 
 
 def data():
@@ -31,10 +31,10 @@ def test_model_data_pop():
     # pop
     obs = model.model_data['N']
     exp = natdata['n']
-    assert_almost_equal(obs, exp)
+    assert obs == approx(exp)
     obs = model.model_data['n']
     exp = subdata['n'] * natdata['n'] / subdata['n'].sum()
-    assert_array_almost_equal(obs, exp[::-1])
+    assert obs == approx(exp[::-1])
 
 
 def test_model_data_inc():
@@ -45,12 +45,12 @@ def test_model_data_inc():
     # inc
     obs = model.model_data['G']
     exp = natdata['n'] * natdata['i']
-    assert_almost_equal(obs, exp)
+    assert obs == approx(exp)
     obs = model.model_data['g']
     expn = subdata['n'] * natdata['n'] / subdata['n'].sum()
     exp = (subdata['i'] * expn) * (natdata['i'] * natdata['n']) \
         / (subdata['i'] * expn).sum()
-    assert_array_almost_equal(obs, exp[::-1])
+    assert obs == approx(exp[::-1])
 
 
 def test_model_data_ineq():
@@ -61,7 +61,7 @@ def test_model_data_ineq():
     # ineq
     obs = model.model_data['t']
     exp = ineq.gini_to_theil(subdata['gini'].values, empirical=False)
-    assert_array_almost_equal(obs, exp[::-1])
+    assert obs == approx(exp[::-1])
 
 
 def test_model_data_idx():
@@ -85,11 +85,11 @@ def test_model_data_error():
     natdata, subdata = data()
     ndf = natdata.copy().drop('n')
     with pytest.raises(ValueError):
-        model = Model(ndf, subdata)
+        Model(ndf, subdata)
 
     sdf = natdata.copy().drop('n')
     with pytest.raises(ValueError):
-        model = Model(natdata, sdf)
+        Model(natdata, sdf)
 
 
 def test_Model1_full():
@@ -103,8 +103,7 @@ def test_Model1_full():
     obs = model.solution
     # solution is ordered small to large
     exp = np.array([0.062872, 0.369337])
-    assert_array_almost_equal(obs, exp)
-    theil_exp = exp
+    assert obs.values == approx(exp, abs=1e-5)
 
     df = model.result()
     obs = sorted(df.columns)
@@ -113,15 +112,15 @@ def test_Model1_full():
 
     obs = df['gini_orig']
     exp = subdata['gini']
-    assert_array_almost_equal(obs, exp)
+    assert_series_equal(obs, exp, check_names=False)
 
     obs = df['i_orig']
     exp = subdata['i']
-    assert_array_almost_equal(obs, exp)
+    assert_series_equal(obs, exp, check_names=False)
 
     obs = df['n_orig']
     exp = subdata['n']
-    assert_array_almost_equal(obs, exp)
+    assert_series_equal(obs, exp, check_names=False)
 
 
 def test_Model1_result():
@@ -133,7 +132,7 @@ def test_Model1_result():
     # ginis in original order
     obs = model.result()['gini'].values
     exp = [0.45663392, 0.19798731]
-    assert_array_almost_equal(obs, exp)
+    assert obs == approx(exp)
 
 
 def test_Model2_result():
@@ -145,7 +144,7 @@ def test_Model2_result():
     # ginis in original order
     obs = model.result()['gini'].values
     exp = [0.45663392, 0.19798731]
-    assert_array_almost_equal(obs, exp)
+    assert obs == approx(exp)
 
 
 def test_Model3_result():
@@ -157,7 +156,7 @@ def test_Model3_result():
     # ginis in original order
     obs = model.result()['gini'].values
     exp = [0.43521867, 0.24902784]
-    assert_array_almost_equal(obs, exp)
+    assert obs == approx(exp)
 
 
 def test_Model4_result():
@@ -169,7 +168,7 @@ def test_Model4_result():
     # ginis in original order
     obs = model.result()['gini'].values
     exp = [0.41473959, 0.28608873]
-    assert_array_almost_equal(obs, exp)
+    assert obs == approx(exp)
 
 
 def test_Model4b_result():
@@ -181,4 +180,4 @@ def test_Model4b_result():
     # ginis in original order
     obs = model.result()['gini'].values
     exp = [0.48849954, 0.0277764]
-    assert_array_almost_equal(obs, exp)
+    assert obs == approx(exp)

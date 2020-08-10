@@ -1,4 +1,5 @@
 import pytest
+from pytest import approx
 import os
 
 import pandas as pd
@@ -7,25 +8,26 @@ from pandas.util.testing import assert_frame_equal
 
 from salamanca import data
 
-from utils import assert_almost_equal, logging_on
 
 @pytest.mark.remote
 def test_wb_db_query():
     wb = data.WorldBank()
-    q = wb._query_url('DPANUSSPF', iso='ind;chn', MRV=5, frequency='M')
-    result = wb._do_query(q)
+    result = wb._do_query(
+        'DPANUSSPF',
+        dict(iso='ind;chn', date="2017M05:2017M07", frequency='M')
+    )
     for d in result:
         if d['date'] == '2017M06':
             if d['country']['value'] == 'China':
-                assert d['value'] == '6.80702272727'
+                assert d['value'] == 6.80702272727
             if d['country']['value'] == 'India':
-                assert d['value'] == '64.44736363636'
+                assert d['value'] == 64.44736363636
 
 
 @pytest.mark.remote
 def test_wb_query():
     wb = data.WorldBank()
-    df = wb.query('DPANUSSPF', iso='ind;chn', MRV=5,
+    df = wb.query('DPANUSSPF', iso='ind;chn', date="2017M05:2017M07",
                   frequency='M', use_cache=False)
     obs = df[df.date == '2017M06'].set_index('country')
     exp = pd.DataFrame({
@@ -53,7 +55,7 @@ def test_wb_query_cache():
 
     obs = float(df[(df.country == 'AFG') & (df.date == 1992)]['value'])
     exp = 43.507299
-    assert_almost_equal(obs, exp)
+    assert obs == approx(exp)
 
 
 @pytest.mark.remote
@@ -63,4 +65,4 @@ def test_wb_exchange_rate():
     df = wb.exchange_rate()
     obs = float(df[(df.country == 'AUT') & (df.date == 2015)]['value'])
     exp = 0.902
-    assert_almost_equal(obs, exp, eps=1e-3)
+    assert obs == approx(exp, rel=1e-3)
