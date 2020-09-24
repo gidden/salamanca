@@ -1,56 +1,55 @@
 import pytest
+from pytest import approx
 
 from salamanca import ineq as iq
-
-from utils import assert_almost_equal
 
 
 def test_gini_to_std():
     obs = iq.gini_to_std(0.5)
     exp = 0.95387
-    assert_almost_equal(obs, exp, eps=1e-5)
+    assert obs == approx(exp, abs=1e-5)
 
 
 def test_std_to_gini():
     obs = iq.std_to_gini(0.95387)
     exp = 0.5
-    assert_almost_equal(obs, exp, eps=1e-5)
+    assert obs == approx(exp, abs=1e-5)
 
 
 def test_theil_to_std():
     obs = iq.theil_to_std(0.75)
     exp = 1.22474
-    assert_almost_equal(obs, exp, eps=1e-5)
+    assert obs == approx(exp, abs=1e-5)
 
 
 def test_std_to_theil():
     obs = iq.std_to_theil(1.22474)
     exp = 0.75
-    assert_almost_equal(obs, exp, eps=1e-5)
+    assert obs == approx(exp, abs=1e-5)
 
 
 def test_gini_to_theil():
     obs = iq.gini_to_theil(0.5)
     exp = 0.45493
-    assert_almost_equal(obs, exp, eps=1e-5)
+    assert obs == approx(exp, abs=1e-5)
 
 
 def test_theil_to_gini():
     obs = iq.theil_to_gini(0.45493)
     exp = 0.5
-    assert_almost_equal(obs, exp, eps=1e-5)
+    assert obs == approx(exp, abs=1e-5)
 
 
 def test_gini_to_theil_empirical():
     obs = iq.gini_to_theil(0.5, empirical=True)
     exp = 0.41796
-    assert_almost_equal(obs, exp, eps=1e-5)
+    assert obs == approx(exp, abs=1e-5)
 
 
 def test_theil_to_gini_empirical():
     obs = iq.theil_to_gini(0.41796, empirical=True)
     exp = 0.5
-    assert_almost_equal(obs, exp, eps=1e-5)
+    assert obs == approx(exp, abs=1e-5)
 
 
 def test_gini_to_theil_close_lo():
@@ -145,8 +144,8 @@ def test_ln_params_mean():
     obs_shape, obs_scale = dist.params()
     exp_shape = 0.953872
     exp_scale = 634.48830545
-    assert_almost_equal(obs_shape, exp_shape)
-    assert_almost_equal(obs_scale, exp_scale)
+    assert obs_shape == approx(exp_shape)
+    assert obs_scale == approx(exp_scale)
 
 
 def test_ln_params_median():
@@ -154,22 +153,22 @@ def test_ln_params_median():
     obs_shape, obs_scale = dist.params(mean=False)
     exp_shape = 0.953872
     exp_scale = 1000
-    assert_almost_equal(obs_shape, exp_shape)
-    assert_almost_equal(obs_scale, exp_scale)
+    assert obs_shape == approx(exp_shape)
+    assert obs_scale == approx(exp_scale)
 
 
 def test_ln_lorenz_gini():
     dist = iq.LogNormal()
     obs = dist.lorenz(0.4, gini=0.5)
     exp = 0.11367378
-    assert_almost_equal(obs, exp)
+    assert obs == approx(exp)
 
 
 def test_ln_lorenz_theil():
     dist = iq.LogNormal()
     obs = dist.lorenz(0.4, theil=0.5)
     exp = 0.1050397
-    assert_almost_equal(obs, exp)
+    assert obs == approx(exp)
 
 
 def test_ln_threshold():
@@ -177,7 +176,7 @@ def test_ln_threshold():
     dist = iq.LogNormal()
     exp = dist.cdf(0.4, gini=0.5)
     obs = dist.below_threshold(0.4, gini=0.5)
-    assert_almost_equal(exp, obs)
+    assert obs == approx(exp)
 
 
 def test_ln_scipy_funcs():
