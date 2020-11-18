@@ -47,6 +47,8 @@ def exchange_cli(parser):
     parser.add_argument('-u', '--units', help=units, default='MER')
     meth = "method to use to do conversion [deflator or cpi] (default: deflator)"
     parser.add_argument('-m', '--meth', help=meth, default='deflator')
+    inusd = "if given, assume values are in USD instead of LC (default: False)"
+    parser.add_argument('-s', '--inusd', help=inusd, action="store_true")
 
     required = parser.add_argument_group('required arguments')
     _from = """
@@ -67,12 +69,21 @@ def exchange(**kwargs):
     toiso, toyr = kwargs['to']
     units = kwargs['units']
     inflation_method = kwargs['meth']
+    inusd = kwargs['inusd']
+
+    if inusd:
+        if fromiso != toiso:
+            raise ValueError("With `--inusd` origin and destination country must be the same")
+        isoargs = {'iso': fromiso}
+    else:
+        isoargs = {'fromiso': fromiso, 'toiso': toiso}
+
 
     xlator = currency.Translator()
     ret = xlator.exchange(amt,
-                          fromiso=fromiso, fromyr=fromyr,
-                          toiso=toiso, toyr=toyr,
-                          units=units, inflation_method=inflation_method)
+                          fromyr=fromyr, toyr=toyr,
+                          units=units, inflation_method=inflation_method,
+                          inusd=inusd, **isoargs)
     print(ret)
     return ret
 
