@@ -43,7 +43,6 @@ extensions = [
     'nbsphinx',
     'sphinxcontrib.programoutput',
     'sphinxcontrib.exceltable',
-    'sphinx.ext.mathbase',
     'sphinx.ext.autosummary',
 ]
 
