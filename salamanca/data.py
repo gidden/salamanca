@@ -157,6 +157,7 @@ class WorldBank(object):
         df = df.dropna(subset=['country'])
         df = df[df['country'] != '']
         if len(df['country'].iloc[0]) == 2:
+            meta = self.iso_metadata()
             mapping = {r['iso2Code']: r['id'] for idx, r in meta.iterrows()}
             df['country'] = df['country'].map(mapping)
 
