@@ -140,7 +140,7 @@ class WorldBank(object):
 
         # construct as data frame
         df = pd.DataFrame(result)
-        df['country'] = df['countryiso3code']
+        df['country'] = df['country'].apply(lambda x: x['id'])
         df.drop(['decimal', 'indicator', 'countryiso3code',
                  'unit', 'obs_status'],
                 axis=1, inplace=True)
@@ -149,10 +149,17 @@ class WorldBank(object):
             df['date'] = df['date'].astype(int)
         except:
             pass
-        # remove NaN countries
-        # TODO: why are there NaNs?
+
+        # fix up country names to gaurantee ISO3-standard
+        # in a recent update, some tables were found to be id'd to iso2,
+        # which is fixed here
+        # TODO: why are there NaNs? why would any be empty?
         df = df.dropna(subset=['country'])
         df = df[df['country'] != '']
+        if len(df['country'].iloc[0]) == 2:
+            mapping = {r['iso2Code']: r['id'] for idx, r in meta.iterrows()}
+            df['country'] = df['country'].map(mapping)
+
 
         # write to disc if we're caching
         if use_cache and (not exists or overwrite):
