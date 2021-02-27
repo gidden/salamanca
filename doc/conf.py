@@ -42,7 +42,6 @@ extensions = [
     'numpydoc',
     'nbsphinx',
     'sphinxcontrib.programoutput',
-    'sphinxcontrib.exceltable',
     'sphinx.ext.autosummary',
 ]
 

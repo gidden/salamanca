@@ -6,6 +6,7 @@ dependencies:
   - xlsxwriter
   - matplotlib
   - seaborn
+  - pandoc
   - pip:
     - sphinx
     - sphinxcontrib-exceltable
