@@ -140,10 +140,10 @@ class WorldBank(object):
 
         # construct as data frame
         df = pd.DataFrame(result)
+        df['country'] = df['countryiso3code']
         df.drop(['decimal', 'indicator', 'countryiso3code',
                  'unit', 'obs_status'],
                 axis=1, inplace=True)
-        df['country'] = df['country'].apply(lambda x: x['id'])
         try:
             # convert years if possible
             df['date'] = df['date'].astype(int)
@@ -152,6 +152,7 @@ class WorldBank(object):
         # remove NaN countries
         # TODO: why are there NaNs?
         df = df.dropna(subset=['country'])
+        df = df[df['country'] != '']
 
         # write to disc if we're caching
         if use_cache and (not exists or overwrite):
@@ -201,6 +202,7 @@ class WorldBank(object):
 
     def exchange_rate(self, **kwargs):
         df = self.query('exchange_rate', **kwargs)
+
         # update newer currency unions
         df = self._merge_eu(df)
         return df
