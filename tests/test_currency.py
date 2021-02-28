@@ -158,6 +158,7 @@ def test_cli():
         'to': ('AUT', '2010'),
         'units': 'PPP',
         'meth': 'deflator',
+        'inusd': False,
     }
     obs = cli.exchange(**kwargs)
     exp = 20 * (xr_aut_2005 / xr_can_2005) / (gdef_aut_2005 / 100.)

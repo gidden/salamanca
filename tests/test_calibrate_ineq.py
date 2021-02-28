@@ -3,10 +3,14 @@ from pytest import approx
 
 import numpy as np
 import pandas as pd
+import pyomo.environ as pyo
 from pandas.testing import assert_series_equal
 
 from salamanca import ineq
 from salamanca.models.calibrate_ineq import Model, Model1, Model2, Model3, Model4, Model4b
+
+has_ipopt = pyo.SolverFactory('ipopt').available() == True
+ipopt_reason = 'IPopt Solver not available'
 
 
 def data():
@@ -91,7 +95,7 @@ def test_model_data_error():
     with pytest.raises(ValueError):
         Model(natdata, sdf)
 
-
+@pytest.mark.skipif(not has_ipopt, reason=ipopt_reason)
 def test_Model1_full():
     natdata, subdata = data()
     model = Model1(natdata, subdata)
@@ -123,6 +127,7 @@ def test_Model1_full():
     assert_series_equal(obs, exp, check_names=False)
 
 
+@pytest.mark.skipif(not has_ipopt, reason=ipopt_reason)
 def test_Model1_result():
     natdata, subdata = data()
     model = Model1(natdata, subdata)
@@ -135,6 +140,7 @@ def test_Model1_result():
     assert obs == approx(exp)
 
 
+@pytest.mark.skipif(not has_ipopt, reason=ipopt_reason)
 def test_Model2_result():
     natdata, subdata = data()
     model = Model2(natdata, subdata)
@@ -147,6 +153,7 @@ def test_Model2_result():
     assert obs == approx(exp)
 
 
+@pytest.mark.skipif(not has_ipopt, reason=ipopt_reason)
 def test_Model3_result():
     natdata, subdata = data()
     model = Model3(natdata, subdata)
@@ -159,6 +166,7 @@ def test_Model3_result():
     assert obs == approx(exp)
 
 
+@pytest.mark.skipif(not has_ipopt, reason=ipopt_reason)
 def test_Model4_result():
     natdata, subdata = data()
     model = Model4(natdata, subdata)
@@ -171,6 +179,7 @@ def test_Model4_result():
     assert obs == approx(exp)
 
 
+@pytest.mark.skipif(not has_ipopt, reason=ipopt_reason)
 def test_Model4b_result():
     natdata, subdata = data()
     model = Model4b(natdata, subdata)

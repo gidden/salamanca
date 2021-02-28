@@ -1,15 +1,25 @@
 
-salamanca: The Python Economics Toolbox
-=======================================
+salamanca: A Python Toolbox for Economic and Monetary Analysis
+==============================================================
 
 Release v\ |version|.
 
-.. image:: https://circleci.com/gh/gidden/salamanca.svg?style=shield&circle-token=:circle-token
-    :target: https://circleci.com/gh/gidden/salamanca
+|license| |tests| |codecov| |rtd|
 
-.. image:: https://coveralls.io/repos/github/gidden/salamanca/badge.svg?branch=master
+.. |license| image:: https://img.shields.io/badge/License-Apache%202.0-black
+   :target: https://github.com/IAMconsortium/pyam/blob/master/LICENSE
+
+.. |tests| image:: https://github.com/gidden/salamanca/actions/workflows/test.yml/badge.svg
+   :target: https://github.com/gidden/salamanca/actions/workflows/test.yml
+
+.. |codecov| image:: https://coveralls.io/repos/github/gidden/salamanca/badge.svg?branch=master
     :target: https://coveralls.io/github/gidden/salamanca?branch=master
-   
+
+.. |rtd| image:: https://readthedocs.org/projects/salamanca/badge/?version=latest
+   :target: https://salamanca.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+
+
 **salamanca** is a Python package for working with socio-economic data and
 models. It provides a robust API and and Command Line Interface (CLI).
 
