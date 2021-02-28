@@ -4,7 +4,11 @@ salamanca: A Python Toolbox for Economic and Monetary Analysis
 
 Release v\ |version|.
 
-|license| |tests| |codecov| |rtd|
+|pypi| |rtd| |license|
+|tests| |codecov|
+
+.. |pypi| image:: https://img.shields.io/pypi/v/salamanca.svg
+   :target: https://pypi.python.org/pypi/salamanca/
 
 .. |license| image:: https://img.shields.io/badge/License-Apache%202.0-black
    :target: https://github.com/IAMconsortium/pyam/blob/master/LICENSE
