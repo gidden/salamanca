@@ -20,19 +20,19 @@ Release v\ |version|.
    :alt: Documentation Status
 
 
-**salamanca** is a Python package for working with socio-economic data and
-models. It provides a robust API and and Command Line Interface (CLI).
+**salamanca** is a Python package for working with economic and monetary data,
+including supporting currency conversion calculations. It provides a robust API and and 
+Command Line Interface (CLI).
 
 Documentation
 -------------
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    starting
    install
    api
-   models
    cli
 
 
