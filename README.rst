@@ -1,52 +1,31 @@
-`salamanca` - A Python library for working with socio-economic indicators
-=========================================================================
+salamanca: A Python Toolbox for Economic and Monetary Analysis
+==============================================================
 
-.. image:: https://circleci.com/gh/gidden/salamanca.svg?style=shield&circle-token=:circle-token
-    :target: https://circleci.com/gh/gidden/salamanca
+|license| |tests| |codecov| |rtd|
 
-.. image:: https://coveralls.io/repos/github/gidden/salamanca/badge.svg?branch=master
+.. |license| image:: https://img.shields.io/badge/License-Apache%202.0-black
+   :target: https://github.com/IAMconsortium/pyam/blob/master/LICENSE
+
+.. |tests| image:: https://github.com/gidden/salamanca/actions/workflows/test.yml/badge.svg
+   :target: https://github.com/gidden/salamanca/actions/workflows/test.yml
+
+.. |codecov| image:: https://coveralls.io/repos/github/gidden/salamanca/badge.svg?branch=master
     :target: https://coveralls.io/github/gidden/salamanca?branch=master
-   
-**Please note that salamanca is still in early developmental stages, thus all interfaces are subject to change.**
+
+.. |rtd| image:: https://readthedocs.org/projects/salamanca/badge/?version=latest
+   :target: https://salamanca.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+
+
+**salamanca** is a Python package for working with economic and monetary data,
+including supporting currency conversion calculations. It provides a robust API and and 
+Command Line Interface (CLI).
 
 Documentation
 -------------
 
-All documentation can be found at http://mattgidden.com/salamanca
+All documentation can be found at https://salamanca.readthedocs.io/en/latest/index.html
 
-Install
--------
-
-From Source
-***********
-
-Installing from source is as easy as
-
-.. code-block:: bash
-
-    pip install -r requirements.txt && python setup.py install
-
-Build the Docs
---------------
-
-Requirements
-************
-
-- `cloud_sptheme`
-- `numpydoc`
-- `nbsphinx`
-- `sphinxcontrib-programoutput`
-- `sphinxcontrib-exceltable`
-
-Build and Serve
-***************
-
-.. code-block:: bash
-
-    cd doc
-    make html
-
-Then point you browser to `http://127.0.0.1:8000/`.
 
 License
 -------
