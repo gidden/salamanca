@@ -4,18 +4,13 @@ salamanca: The Python Economics Toolbox
 
 Release v\ |version|.
 
-|license| |pypi| 
-
-|tests| |codecov| |rtd|
+|license| |tests| |codecov| |rtd|
 
 .. |license| image:: https://img.shields.io/badge/License-Apache%202.0-black
    :target: https://github.com/IAMconsortium/pyam/blob/master/LICENSE
 
-.. |pypi| image:: https://img.shields.io/pypi/v/pyam-iamc.svg
-   :target: https://pypi.python.org/pypi/pyam-iamc/
-
-.. |tests| image:: https://github.com/IAMconsortium/pyam/workflows/pytest%20(3.8)/badge.svg?branch=master
-   :target: https://github.com/IAMconsortium/pyam/actions?query=workflow%3A%22pytest+%283.8%29%22+branch%3Amaster
+.. |tests| image:: https://github.com/gidden/salamanca/actions/workflows/test.yml/badge.svg
+   :target: https://github.com/gidden/salamanca/actions/workflows/test.yml
 
 .. |codecov| image:: https://coveralls.io/repos/github/gidden/salamanca/badge.svg?branch=master
     :target: https://coveralls.io/github/gidden/salamanca?branch=master
