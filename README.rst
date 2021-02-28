@@ -1,8 +1,6 @@
 salamanca: A Python Toolbox for Economic and Monetary Analysis
 ==============================================================
 
-Release v\ |version|.
-
 |license| |tests| |codecov| |rtd|
 
 .. |license| image:: https://img.shields.io/badge/License-Apache%202.0-black
