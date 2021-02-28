@@ -1,7 +1,7 @@
 # This workflow installs the package and runs the tests
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: pytest (3.7)
+name: Tests (Windows, MacOSX, Unix)
 
 on:
   push:

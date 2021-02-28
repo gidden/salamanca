@@ -4,12 +4,27 @@ salamanca: The Python Economics Toolbox
 
 Release v\ |version|.
 
-.. image:: https://circleci.com/gh/gidden/salamanca.svg?style=shield&circle-token=:circle-token
-    :target: https://circleci.com/gh/gidden/salamanca
+|license| |pypi| 
 
-.. image:: https://coveralls.io/repos/github/gidden/salamanca/badge.svg?branch=master
+|tests| |codecov| |rtd|
+
+.. |license| image:: https://img.shields.io/badge/License-Apache%202.0-black
+   :target: https://github.com/IAMconsortium/pyam/blob/master/LICENSE
+
+.. |pypi| image:: https://img.shields.io/pypi/v/pyam-iamc.svg
+   :target: https://pypi.python.org/pypi/pyam-iamc/
+
+.. |tests| image:: https://github.com/IAMconsortium/pyam/workflows/pytest%20(3.8)/badge.svg?branch=master
+   :target: https://github.com/IAMconsortium/pyam/actions?query=workflow%3A%22pytest+%283.8%29%22+branch%3Amaster
+
+.. |codecov| image:: https://coveralls.io/repos/github/gidden/salamanca/badge.svg?branch=master
     :target: https://coveralls.io/github/gidden/salamanca?branch=master
-   
+
+.. |rtd| image:: https://readthedocs.org/projects/salamanca/badge/?version=latest
+   :target: https://salamanca.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+
+
 **salamanca** is a Python package for working with socio-economic data and
 models. It provides a robust API and and Command Line Interface (CLI).
 
