@@ -1,6 +1,6 @@
 
-salamanca: The Python Economics Toolbox
-=======================================
+salamanca: A Python Toolbox for Economic and Monetary Analysis
+==============================================================
 
 Release v\ |version|.
 
